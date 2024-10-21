@@ -50,6 +50,7 @@ const getConnectionClient = async (connectionInfo, logger) => {
 			? `${connectionInfo.userName}@${hostName}`
 			: connectionInfo.userName;
 	const tenantId = connectionInfo.connectionTenantId || connectionInfo.tenantId || 'common';
+	const clientId = connectionInfo.clientId;
 	const sslOptions = getSslConfig(connectionInfo);
 
 	if (connectionInfo.authMethod === 'Username / Password') {
@@ -127,6 +128,8 @@ const getConnectionClient = async (connectionInfo, logger) => {
 				options: {
 					userName: connectionInfo.userName,
 					password: connectionInfo.userPassword,
+					domain: tenantId,
+					clientId,
 				},
 			},
 			connectTimeout: Number(connectionInfo.queryRequestTimeout) || 60000,
