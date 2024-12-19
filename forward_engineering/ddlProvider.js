@@ -45,7 +45,7 @@ module.exports = (baseProvider, options, app) => {
 	const terminator = getTerminator(options);
 
 	return {
-		createSchema({ schemaName, databaseName, ifNotExist, comment }) {
+		createSchema({ schemaName, databaseName, ifNotExist, comment, isActivated }) {
 			const schemaTerminator = ifNotExist ? ';' : terminator;
 
 			const schemaComment = comment
@@ -56,11 +56,14 @@ module.exports = (baseProvider, options, app) => {
 					})
 				: '';
 
-			let schemaStatement = assignTemplates(templates.createSchema, {
-				name: schemaName,
-				terminator: schemaTerminator,
-				comment: schemaComment ? `\n\n${schemaComment}` : '',
-			});
+			let schemaStatement = commentIfDeactivated(
+				assignTemplates(templates.createSchema, {
+					name: schemaName,
+					terminator: schemaTerminator,
+					comment: schemaComment ? `\n\n${schemaComment}` : '',
+				}),
+				{ isActivated },
+			);
 
 			if (!databaseName) {
 				return ifNotExist
@@ -500,6 +503,7 @@ module.exports = (baseProvider, options, app) => {
 				databaseName: containerData.databaseName,
 				ifNotExist: containerData.ifNotExist,
 				comment: containerData.role?.description ?? containerData.description,
+				isActivated: containerData.isActivated,
 			};
 		},
 
