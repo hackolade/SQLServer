@@ -1,3 +1,9 @@
+/**
+ * @typedef {import('../types').ColumnDefinition} ColumnDefinition
+ * @typedef {import('../types').JsonSchema} JsonSchema
+ * @typedef {import('../types').ConstraintDto} ConstraintDto
+ */
+
 module.exports = app => {
 	const _ = app.require('lodash');
 	const { clean } = app.require('@hackolade/ddl-fe-utils').general;
@@ -184,6 +190,60 @@ module.exports = app => {
 		];
 	};
 
+	/**
+	 * @param {{ jsonSchema: JsonSchema }}
+	 * @returns {ConstraintDto[]}
+	 */
+	const getCompositeKeyConstraints = ({ jsonSchema }) => {
+		const compositePrimaryKeys = getCompositePrimaryKeys(jsonSchema);
+		const compositeUniqueKeys = getCompositeUniqueKeys(jsonSchema);
+
+		return [...compositePrimaryKeys, ...compositeUniqueKeys];
+	};
+
+	/**
+	 * @param {{ columnDefinition: ColumnDefinition }}
+	 * @returns {ConstraintDto | undefined}
+	 */
+	const getPrimaryKeyConstraint = ({ columnDefinition }) => {
+		if (!isPrimaryKey(columnDefinition)) {
+			return;
+		}
+
+		return hydratePrimaryKeyOptions(columnDefinition.primaryKeyOptions ?? {}, '', columnDefinition.isActivated);
+	};
+
+	/**
+	 * @param {{ columnDefinition: ColumnDefinition }}
+	 * @returns {ConstraintDto[]}
+	 */
+	const getUniqueKeyConstraints = ({ columnDefinition }) => {
+		if (!isUnique(columnDefinition)) {
+			return [];
+		}
+
+		if (isInlineUnique(columnDefinition)) {
+			const constraint = hydrateUniqueOptions({}, '', columnDefinition.isActivated);
+
+			return [constraint];
+		}
+
+		return columnDefinition.uniqueKeyOptions.map(uniqueKeyOption => {
+			return hydrateUniqueOptions(uniqueKeyOption, '', columnDefinition.isActivated);
+		});
+	};
+
+	/**
+	 * @param {{ columnDefinition: ColumnDefinition }}
+	 * @returns {ConstraintDto[]}
+	 */
+	const getColumnConstraints = ({ columnDefinition }) => {
+		const primaryKeyConstraint = getPrimaryKeyConstraint({ columnDefinition });
+		const uniqueKeyConstraints = getUniqueKeyConstraints({ columnDefinition });
+
+		return [primaryKeyConstraint, ...uniqueKeyConstraints].filter(Boolean);
+	};
+
 	return {
 		getTableKeyConstraints,
 		isInlineUnique,
@@ -191,5 +251,7 @@ module.exports = app => {
 		hydratePrimaryKeyOptions,
 		hydrateUniqueOptions,
 		getCompositePrimaryKeys,
+		getCompositeKeyConstraints,
+		getColumnConstraints,
 	};
 };
