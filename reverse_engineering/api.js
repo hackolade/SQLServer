@@ -1,5 +1,3 @@
-'use strict';
-
 const crypto = require('crypto');
 const randomstring = require('randomstring');
 const base64url = require('base64url');
@@ -11,7 +9,6 @@ const {
 	getCollectionsRelationships,
 	logDatabaseVersion,
 } = require('./reverseEngineeringService/reverseEngineeringService');
-const logInfo = require('./helpers/logInfo');
 const { getJsonSchemasWithInjectedDescriptionComments } = require('./helpers/commentsHelper');
 const filterRelationships = require('./helpers/filterRelationships');
 const getOptionsFromConnectionInfo = require('./helpers/getOptionsFromConnectionInfo');
@@ -41,7 +38,6 @@ module.exports = {
 
 	async testConnection(connectionInfo, logger, callback, app) {
 		try {
-			logInfo('Test connection', connectionInfo, logger);
 			if (connectionInfo.authMethod === 'Azure Active Directory (MFA)') {
 				await this.getExternalBrowserUrl(connectionInfo, logger, callback, app);
 			} else {
@@ -89,14 +85,10 @@ module.exports = {
 
 	async getDbCollectionsNames(connectionInfo, logger, callback, app) {
 		try {
-			logInfo('Retrieving databases and tables information', connectionInfo, logger);
-
 			const client = await this.connect(connectionInfo, logger, () => {}, app);
 			if (!client.config.database) {
 				throw new Error('No database specified');
 			}
-
-			await logDatabaseVersion({ client, logger });
 
 			const objects = await getObjectsFromDatabase(client);
 			const dbName = client.config.database;
@@ -120,7 +112,6 @@ module.exports = {
 
 	async getDbCollectionsData(collectionsInfo, logger, callback, app) {
 		try {
-			logger.log('info', collectionsInfo, 'Retrieving schema', collectionsInfo.hiddenKeys);
 			logger.progress({ message: 'Start reverse-engineering process', containerName: '', entityName: '' });
 			const { collections } = collectionsInfo.collectionData;
 			const client = clientManager.getClient();
