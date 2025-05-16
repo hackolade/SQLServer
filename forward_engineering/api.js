@@ -1,4 +1,5 @@
 const { DROP_STATEMENTS } = require('./helpers/constants');
+const logInfo = require('../reverse_engineering/helpers/logInfo');
 const { connect, getExternalBrowserUrl } = require('../reverse_engineering/api');
 const { logDatabaseVersion } = require('../reverse_engineering/reverseEngineeringService/reverseEngineeringService');
 const applyToInstanceHelper = require('./helpers/applyToInstanceHelper');
@@ -101,6 +102,7 @@ module.exports = {
 	},
 	async testConnection(connectionInfo, logger, callback, app) {
 		try {
+			logInfo('Test connection', connectionInfo, logger);
 			if (connectionInfo.authMethod === 'Azure Active Directory (MFA)') {
 				await getExternalBrowserUrl(connectionInfo, logger, callback, app);
 			} else {
@@ -114,6 +116,9 @@ module.exports = {
 		}
 	},
 	async applyToInstance(connectionInfo, logger, callback, app) {
+		logger.clear();
+		logInfo('Apply To Instance', connectionInfo, logger);
+
 		try {
 			await applyToInstanceHelper.applyToInstance(connectionInfo, logger, app);
 			callback(null);
