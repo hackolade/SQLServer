@@ -1029,5 +1029,32 @@ module.exports = (baseProvider, options, app) => {
 			};
 			return assignTemplates(templates.dropConstraint, templateConfig);
 		},
+
+		addUniqueConstraint(tableName, isParentActivated, keyData, isUKWithOptions) {
+			const constraintStatementDto = createKeyConstraint(
+				templates,
+				terminator,
+				isParentActivated,
+				isUKWithOptions,
+				true,
+			)(keyData);
+
+			return {
+				statement: assignTemplates(templates.addConstraint, {
+					tableName,
+					constraintStatement: (constraintStatementDto.statement || '').trim(),
+					terminator,
+				}),
+				isActivated: constraintStatementDto.isActivated,
+			};
+		},
+
+		dropUniqueConstraint(tableName, constraintName) {
+			return assignTemplates(templates.dropConstraint, {
+				tableName,
+				constraintName,
+				terminator,
+			});
+		},
 	};
 };
