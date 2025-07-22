@@ -101,7 +101,13 @@ const getAddCompositeUKScriptDtos = (app, _, ddlProvider) => collection => {
 				return null;
 			}
 
-			const statementDto = ddlProvider.addUniqueConstraint(fullTableName, collection.isActivated, keyData, true);
+			const statementDto = ddlProvider.addUniqueConstraint(
+				fullTableName,
+				collection.isActivated,
+				keyData,
+				true,
+				true,
+			);
 
 			return new UniqueConstraintScriptModificationDto(
 				statementDto.statement,
@@ -171,12 +177,173 @@ const sortModifyUniqueConstraints = constraintDtos => {
 };
 
 /**
+ * @param entityName {string}
+ * @param columnName {string}
+ * @return {string}
+ * */
+const getDefaultUniqueConstraintNameForRegularUK = (entityName, columnName) => {
+	return `UQ_${entityName}_${columnName}`;
+};
+
+/**
+ * @param columnJsonSchema {AlterCollectionColumnDto}
+ * @param entityName {string}
+ * @param columnName {string}
+ * @return {string}
+ * */
+const getConstraintNameForRegularUK = (columnJsonSchema, entityName, columnName) => {
+	if (columnJsonSchema.uniqueKeyOptions?.length > 0) {
+		const constraintOption = columnJsonSchema.uniqueKeyOptions[0];
+		if (constraintOption.constraintName) {
+			return constraintOption.constraintName;
+		}
+	}
+	return getDefaultUniqueConstraintNameForRegularUK(entityName, columnName);
+};
+
+/**
+ * @return {(columnJsonSchema: AlterCollectionColumnDto, collection: AlterCollectionDto) => boolean}
+ * */
+const wasFieldChangedToBeARegularUK = _ => (columnJsonSchema, collection) => {
+	const oldName = columnJsonSchema.compMod.oldField.name;
+	const oldColumnJsonSchema = collection.role.properties[oldName];
+
+	const isRegularUniqueKey = columnJsonSchema.unique && !columnJsonSchema.compositeUniqueKey;
+	const wasTheFieldAnyUniqueKey = Boolean(oldColumnJsonSchema?.unique);
+
+	return isRegularUniqueKey && !wasTheFieldAnyUniqueKey;
+};
+
+/**
+ * @return {(columnJsonSchema: AlterCollectionColumnDto, collection: AlterCollectionDto) => boolean}
+ * */
+const isFieldNoLongerARegularUK = _ => (columnJsonSchema, collection) => {
+	const oldName = columnJsonSchema.compMod.oldField.name;
+
+	const oldJsonSchema = collection.role.properties[oldName];
+	const wasTheFieldARegularUniqueKey = oldJsonSchema?.unique && !oldJsonSchema?.compositeUniqueKey;
+
+	const isNotAnyUniqueKey = !columnJsonSchema.unique && !columnJsonSchema.compositeUniqueKey;
+	return wasTheFieldARegularUniqueKey && isNotAnyUniqueKey;
+};
+
+/**
+ * @return {(columnJsonSchema: AlterCollectionColumnDto, collection: AlterCollectionDto) => boolean}
+ * */
+const wasRegularUKModified = _ => (columnJsonSchema, collection) => {
+	const oldName = columnJsonSchema.compMod.oldField.name;
+	const oldJsonSchema = collection.role.properties[oldName] || {};
+
+	const isRegularUniqueKey = columnJsonSchema.unique && !columnJsonSchema.compositeUniqueKey;
+	const wasTheFieldARegularUniqueKey = oldJsonSchema?.unique && !oldJsonSchema?.compositeUniqueKey;
+
+	if (!(isRegularUniqueKey && wasTheFieldARegularUniqueKey)) {
+		return false;
+	}
+
+	// Compare unique key options to detect if they changed
+	const currentOptions = columnJsonSchema.uniqueKeyOptions || [];
+	const oldOptions = oldJsonSchema.uniqueKeyOptions || [];
+
+	const areOptionsEqual = _(oldOptions).differenceWith(currentOptions, _.isEqual).isEmpty();
+	return !areOptionsEqual;
+};
+
+/**
+ * @return {(collection: AlterCollectionDto) => Array<UniqueConstraintScriptModificationDto>}
+ * */
+const getAddUKScriptDtos = (app, _, ddlProvider) => collection => {
+	const { getFullCollectionName, getSchemaOfAlterCollection, getEntityName, wrapInBrackets } =
+		require('../../../utils/general')(_);
+	const { hydrateUniqueOptions } = require('../../keyHelper')(app);
+
+	const collectionSchema = getSchemaOfAlterCollection(collection);
+	const fullTableName = getFullCollectionName(collectionSchema);
+	const entityName = getEntityName(collectionSchema);
+
+	return _.toPairs(collection.properties)
+		.filter(([name, jsonSchema]) => {
+			if (wasFieldChangedToBeARegularUK(_)(jsonSchema, collection)) {
+				return true;
+			}
+			return wasRegularUKModified(_)(jsonSchema, collection);
+		})
+		.map(([name, jsonSchema]) => {
+			let keyData = {
+				constraintName: getDefaultUniqueConstraintNameForRegularUK(entityName, name),
+				columnName: wrapInBrackets(name),
+			};
+			const isUKWithOptions = Boolean(jsonSchema.uniqueKeyOptions?.length);
+
+			if (jsonSchema.uniqueKeyOptions) {
+				keyData = hydrateUniqueOptions(jsonSchema.uniqueKeyOptions[0], name, jsonSchema.isActivated);
+			}
+
+			const statementDto = ddlProvider.addUniqueConstraint(
+				fullTableName,
+				collection.isActivated,
+				keyData,
+				isUKWithOptions,
+				true,
+			);
+			return new UniqueConstraintScriptModificationDto(
+				statementDto.statement,
+				fullTableName,
+				false,
+				statementDto.isActivated,
+			);
+		})
+		.filter(scriptDto => Boolean(scriptDto.script));
+};
+
+/**
+ * @return {(collection: AlterCollectionDto) => Array<UniqueConstraintScriptModificationDto>}
+ * */
+const getDropUKScriptDtos = (_, ddlProvider) => collection => {
+	const { getFullCollectionName, getSchemaOfAlterCollection, getEntityName, wrapInBrackets } =
+		require('../../../utils/general')(_);
+
+	const collectionSchema = getSchemaOfAlterCollection(collection);
+	const fullTableName = getFullCollectionName(collectionSchema);
+	const entityName = getEntityName(collectionSchema);
+
+	return _.toPairs(collection.properties)
+		.filter(([name, jsonSchema]) => {
+			if (isFieldNoLongerARegularUK(_)(jsonSchema, collection)) {
+				return true;
+			}
+			return wasRegularUKModified(_)(jsonSchema, collection);
+		})
+		.map(([name, jsonSchema]) => {
+			const oldName = jsonSchema.compMod.oldField.name;
+			const oldJsonSchema = collection.role.properties[oldName];
+			const ddlConstraintName = wrapInBrackets(getConstraintNameForRegularUK(oldJsonSchema, entityName, oldName));
+
+			const script = ddlProvider.dropUniqueConstraint(fullTableName, ddlConstraintName);
+			return new UniqueConstraintScriptModificationDto(script, fullTableName, true, collection.isActivated);
+		})
+		.filter(scriptDto => Boolean(scriptDto.script));
+};
+
+/**
+ * @return {(collection: AlterCollectionDto) => Array<UniqueConstraintScriptModificationDto>}
+ * */
+const getModifyUKScriptDtos = (app, _, ddlProvider) => collection => {
+	const dropUKScriptDtos = getDropUKScriptDtos(_, ddlProvider)(collection);
+	const addUKScriptDtos = getAddUKScriptDtos(app, _, ddlProvider)(collection);
+
+	return [...dropUKScriptDtos, ...addUKScriptDtos].filter(Boolean);
+};
+
+/**
  * @return {(collection: AlterCollectionDto) => Array<AlterScriptDto>}
  * */
 const getModifyUniqueConstraintsScriptDtos = (app, _, ddlProvider) => collection => {
-	const modifyUniqueConstraintScriptDtos = getModifyCompositeUKScriptDtos(app, _, ddlProvider)(collection);
+	const modifyCompositeUKScriptDtos = getModifyCompositeUKScriptDtos(app, _, ddlProvider)(collection);
+	const modifyUKScriptDtos = getModifyUKScriptDtos(app, _, ddlProvider)(collection);
 
-	const sortedDtos = sortModifyUniqueConstraints(modifyUniqueConstraintScriptDtos);
+	const allDtos = [...modifyCompositeUKScriptDtos, ...modifyUKScriptDtos];
+	const sortedDtos = sortModifyUniqueConstraints(allDtos);
 
 	return sortedDtos
 		.map(dto => {

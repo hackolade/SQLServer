@@ -35,7 +35,7 @@ module.exports = (baseProvider, options, app) => {
 	} = require('./helpers/general')(app);
 	const keyHelper = require('./helpers/keyHelper')(app);
 	const { getTerminator } = require('./helpers/optionsHelper');
-	const { createKeyConstraint, createDefaultConstraint, generateConstraintsString } =
+	const { createPKConstraint, createUKConstraint, createDefaultConstraint, generateConstraintsString } =
 		require('./helpers/constraintsHelper')(app);
 	const { wrapIfNotExistSchema, wrapIfNotExistDatabase, wrapIfNotExistTable, wrapIfNotExistView } =
 		require('./helpers/ifNotExistStatementHelper')(app);
@@ -130,7 +130,7 @@ module.exports = (baseProvider, options, app) => {
 					: '';
 			const columnComments = getColumnsComments(name, tableTerminator, columnDefinitions);
 			const dividedKeysConstraints = divideIntoActivatedAndDeactivated(
-				keyConstraints.map(createKeyConstraint(templates, tableTerminator, isActivated)),
+				keyConstraints.map(createPKConstraint(templates, tableTerminator, isActivated)),
 				key => key.statement,
 			);
 			const keyConstraintsString = generateConstraintsString(dividedKeysConstraints, isActivated);
@@ -199,7 +199,7 @@ module.exports = (baseProvider, options, app) => {
 				: getTableName(columnDefinition.type, columnDefinition.schemaName);
 			const notNull = columnDefinition.nullable ? '' : ' NOT NULL';
 			const primaryKey = columnDefinition.primaryKey
-				? ' ' + createKeyConstraint(templates, terminator, true)(columnDefinition.primaryKeyOptions).statement
+				? ' ' + createPKConstraint(templates, terminator, true)(columnDefinition.primaryKeyOptions).statement
 				: '';
 			const defaultValue = getDefaultValue(
 				columnDefinition.default,
@@ -215,7 +215,7 @@ module.exports = (baseProvider, options, app) => {
 				? getEncryptedWith(columnDefinition.encryption[0])
 				: '';
 			const unique = columnDefinition.unique
-				? ' ' + createKeyConstraint(templates, terminator, true)(columnDefinition.uniqueKeyOptions).statement
+				? ' ' + createUKConstraint(templates, terminator, true)(columnDefinition.uniqueKeyOptions).statement
 				: '';
 			const temporalTableTime = getTempTableTime(
 				columnDefinition.isTempTableStartTimeColumn,
@@ -995,7 +995,7 @@ module.exports = (baseProvider, options, app) => {
 		},
 
 		addPKConstraint(tableName, isParentActivated, keyData, isPKWithOptions, isAlterScript) {
-			const constraintStatementDto = createKeyConstraint(
+			const constraintStatementDto = createPKConstraint(
 				templates,
 				terminator,
 				isParentActivated,
@@ -1030,13 +1030,13 @@ module.exports = (baseProvider, options, app) => {
 			return assignTemplates(templates.dropConstraint, templateConfig);
 		},
 
-		addUniqueConstraint(tableName, isParentActivated, keyData, isUKWithOptions) {
-			const constraintStatementDto = createKeyConstraint(
+		addUniqueConstraint(tableName, isParentActivated, keyData, isUKWithOptions, isAlterScript) {
+			const constraintStatementDto = createUKConstraint(
 				templates,
 				terminator,
 				isParentActivated,
 				isUKWithOptions,
-				true,
+				isAlterScript,
 			)(keyData);
 
 			return {
