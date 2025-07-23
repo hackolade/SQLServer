@@ -41,7 +41,7 @@ class UniqueConstraintScriptModificationDto {
  * @return {string}
  * */
 const getDefaultUniqueConstraintName = (entityName, constraintName) => {
-	return constraintName || `UQ_${entityName}`;
+	return constraintName || `${entityName}_ukey`;
 };
 
 /**
@@ -182,7 +182,7 @@ const sortModifyUniqueConstraints = constraintDtos => {
  * @return {string}
  * */
 const getDefaultUniqueConstraintNameForRegularUK = (entityName, columnName) => {
-	return `UQ_${entityName}_${columnName}`;
+	return `${entityName}_${columnName}_pkey`;
 };
 
 /**
