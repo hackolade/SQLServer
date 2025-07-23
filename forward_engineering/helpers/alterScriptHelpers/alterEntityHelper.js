@@ -18,6 +18,7 @@ module.exports = (app, options) => {
 	const { getModifyCheckConstraintScriptDtos } = require('./entityHelpers/checkConstraintHelper');
 	const { getModifyPkConstraintsScriptDtos } = require('./entityHelpers/primaryKeyHelper');
 	const { getModifyNonNullColumnsScriptDtos } = require('./columnHelpers/notNullConstraintsHelper');
+	const { getModifyUniqueConstraintsScriptDtos } = require('./entityHelpers/uniqueConstraintHelper');
 
 	/**
 	 * @param {Collection} collection
@@ -96,6 +97,7 @@ module.exports = (app, options) => {
 		const idToNameHashTable = generateIdToNameHashTable(jsonSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(jsonSchema);
 		const modifyCheckConstraintScriptDtos = getModifyCheckConstraintScriptDtos(_, ddlProvider)(collection);
+		const modifyUniqueConstraintsScriptDtos = getModifyUniqueConstraintsScriptDtos(app, _, ddlProvider)(collection);
 		const modifyPKConstraintDtos = getModifyPkConstraintsScriptDtos(app, _, ddlProvider)(collection);
 		const indexesScriptsDtos = modifyGroupItems({
 			data: jsonSchema,
@@ -118,7 +120,12 @@ module.exports = (app, options) => {
 				AlterScriptDto.getInstance([ddlProvider.dropIndex(tableName, index)], true, true),
 		}).flat();
 
-		return [...modifyCheckConstraintScriptDtos, ...modifyPKConstraintDtos, ...indexesScriptsDtos].filter(Boolean);
+		return [
+			...modifyCheckConstraintScriptDtos,
+			...modifyPKConstraintDtos,
+			...modifyUniqueConstraintsScriptDtos,
+			...indexesScriptsDtos,
+		].filter(Boolean);
 	};
 
 	/**

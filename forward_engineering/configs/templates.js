@@ -41,6 +41,7 @@ module.exports = {
 	createKeyConstraint: '${constraintName}${keyType}${clustered}${columns}${options}${partition}',
 
 	createRegularPrimaryKeyConstraint: '${constraintName} PRIMARY KEY (${columnName})',
+	createRegularUniqueKeyConstraint: '${constraintName} UNIQUE (${columnName})',
 
 	createDefaultConstraint:
 		'ALTER TABLE ${tableName} ADD CONSTRAINT [${constraintName}] DEFAULT (${default}) FOR [${columnName}]${terminator}\n',

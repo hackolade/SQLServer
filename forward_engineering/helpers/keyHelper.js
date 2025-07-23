@@ -145,12 +145,14 @@ module.exports = app => {
 			}));
 	};
 
-	const getCompositeUniqueKeys = jsonSchema => {
+	const getCompositeUniqueKeys = (jsonSchema, isModifiedUK) => {
 		if (!Array.isArray(jsonSchema.uniqueKey)) {
 			return [];
 		}
 
-		return jsonSchema.uniqueKey
+		const uniqueKey = isModifiedUK ? jsonSchema.compMod.uniqueKey.new : jsonSchema.uniqueKey;
+
+		return uniqueKey
 			.filter(uniqueKey => !_.isEmpty(uniqueKey.compositeUniqueKey))
 			.map(uniqueKey => ({
 				...hydrateUniqueOptions(uniqueKey),
@@ -250,6 +252,7 @@ module.exports = app => {
 		isInlinePrimaryKey,
 		hydratePrimaryKeyOptions,
 		hydrateUniqueOptions,
+		getCompositeUniqueKeys,
 		getCompositePrimaryKeys,
 		getCompositeKeyConstraints,
 		getColumnConstraints,

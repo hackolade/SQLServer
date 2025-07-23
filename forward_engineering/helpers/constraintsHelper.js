@@ -8,10 +8,9 @@ module.exports = app => {
 	const { getRelationOptionsIndex } = require('./indexHelper')(app);
 	const { trimBraces } = require('./general')(app);
 
-	const createKeyConstraint =
+	const createPKConstraint =
 		(templates, terminator, isParentActivated, isPKWithOptions, isAlterScript) => keyData => {
 			const isAllColumnsDeactivated = checkAllKeysDeactivated(keyData.columns || []);
-			const columns = getKeyColumns(isAllColumnsDeactivated, isParentActivated, keyData.columns);
 
 			if (!isPKWithOptions && isAlterScript) {
 				return {
@@ -23,6 +22,42 @@ module.exports = app => {
 				};
 			}
 
+			return createKeyConstraint(
+				templates,
+				terminator,
+				isParentActivated,
+				isPKWithOptions,
+				isAlterScript,
+			)(keyData);
+		};
+
+	const createUKConstraint =
+		(templates, terminator, isParentActivated, isUKWithOptions, isAlterScript) => keyData => {
+			const isAllColumnsDeactivated = checkAllKeysDeactivated(keyData.columns || []);
+
+			if (!isUKWithOptions && isAlterScript) {
+				return {
+					statement: assignTemplates(templates.createRegularUniqueKeyConstraint, {
+						constraintName: keyData.constraintName,
+						columnName: keyData.columnName,
+					}),
+					isActivated: !isAllColumnsDeactivated,
+				};
+			}
+
+			return createKeyConstraint(
+				templates,
+				terminator,
+				isParentActivated,
+				isUKWithOptions,
+				isAlterScript,
+			)(keyData);
+		};
+
+	const createKeyConstraint =
+		(templates, terminator, isParentActivated, isPKWithOptions, isAlterScript) => keyData => {
+			const isAllColumnsDeactivated = checkAllKeysDeactivated(keyData.columns || []);
+			const columns = getKeyColumns(isAllColumnsDeactivated, isParentActivated, keyData.columns);
 			const additionalConstraintStatement = isAlterScript ? '' : 'CONSTRAINT';
 
 			if (!keyDataHasOptions(keyData)) {
@@ -126,6 +161,8 @@ module.exports = app => {
 	return {
 		createDefaultConstraint,
 		createKeyConstraint,
+		createPKConstraint,
+		createUKConstraint,
 		generateConstraintsString,
 	};
 };
