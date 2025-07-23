@@ -91,7 +91,7 @@ const getAddCompositeUKScriptDtos = (app, _, ddlProvider) => collection => {
 		return [];
 	}
 
-	const { fullTableName, entityName } = getCollectionNames(_, collection);
+	const { fullTableName } = getCollectionNames(_, collection);
 
 	return newUniqueConstraints
 		.map(newConstraint => {
