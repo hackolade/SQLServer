@@ -70,6 +70,16 @@
 				},
 				{
 					"dependency": {
+						"key": "primaryKey",
+						"valueType": "object"
+					},
+
+					"defaultValue": {
+						"primaryKey": {}
+					}
+				},
+				{
+					"dependency": {
 						"type": "or",
 						"values": [
 							{
@@ -144,6 +154,15 @@
 				},
 				{
 					"dependency": {
+						"key": "uniqueKey",
+						"valueType": "object"
+					},
+					"defaultValue": {
+						"uniqueKey": {}
+					}
+				},
+				{
+					"dependency": {
 						"type": "or",
 						"values": [
 							{
@@ -153,6 +172,10 @@
 							{
 								"key": "compositeUniqueKey",
 								"value": true
+							},
+							{
+								"key": "compMode",
+								"exist": true
 							}
 						]
 					},
@@ -202,12 +225,12 @@
 			"disabled": false,
 			"value": {
 				"inline": {
-					"default": false,
-					"disabled": true,
+					"default": true,
+					"disabled": false,
 					"disabledLabel": ""
 				},
 				"separate": {
-					"default": true,
+					"default": false,
 					"disabled": false,
 					"disabledLabel": ""
 				},
