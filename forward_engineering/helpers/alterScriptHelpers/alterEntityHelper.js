@@ -309,7 +309,7 @@ module.exports = (app, options) => {
 					const comment = column.description;
 					const oldComment = tables[tableName].role?.properties[columnNameToSearchComment]?.description;
 
-					if (comment || !oldComment) {
+					if (!comment || oldComment) {
 						return undefined;
 					}
 
