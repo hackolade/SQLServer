@@ -112,6 +112,14 @@ module.exports = _ => {
 		const { getAddViewScriptDto, getDeleteViewScriptDto, getModifiedViewScriptDto } =
 			require('./alterScriptHelpers/alterViewHelper')(app, options);
 
+		const checkIfOnlyDescriptionChanged = view => {
+			const changedProps = Object.entries(view.role?.compMod).filter(([_, value]) => value.new !== value.old);
+
+			// If the only change is the description, we ignore it
+			// descriptions are handled in separate methods
+			return !(changedProps.length === 1 && changedProps[0][0] === 'description');
+		};
+
 		const createViewsScriptsDtos = []
 			.concat(collection.properties?.views?.properties?.added?.items)
 			.filter(Boolean)
@@ -134,6 +142,7 @@ module.exports = _ => {
 			.map(item => Object.values(item.properties)[0])
 			.map(view => ({ ...view, ...(view.role || {}) }))
 			.filter(view => !view.compMod?.created && !view.compMod?.deleted)
+			.filter(checkIfOnlyDescriptionChanged)
 			.flatMap(getModifiedViewScriptDto);
 
 		return { deleteViewsScriptsDtos, createViewsScriptsDtos, modifiedViewsScriptsDtos };
