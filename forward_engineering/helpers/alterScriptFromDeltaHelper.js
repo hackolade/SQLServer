@@ -115,13 +115,9 @@ module.exports = _ => {
 		const checkIfOnlyDescriptionChanged = view => {
 			const changedProps = Object.entries(view.role?.compMod).filter(([_, value]) => value.new !== value.old);
 
-			// If only one change is a description, we can ignore it
+			// If the only change is the description, we ignore it
 			// descriptions are handled in separate methods
-			if (changedProps.length === 1 && changedProps[0][0] === 'description') {
-				return false;
-			}
-
-			return true;
+			return !(changedProps.length === 1 && changedProps[0][0] === 'description');
 		};
 
 		const createViewsScriptsDtos = []
