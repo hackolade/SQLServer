@@ -25,7 +25,6 @@ module.exports = (baseProvider, options, app) => {
 		getTableName,
 		getTableOptions,
 		hasType,
-		getDefaultConstraints,
 		foreignKeysToString,
 		checkIndexActivated,
 		getDefaultValue,
@@ -99,6 +98,10 @@ module.exports = (baseProvider, options, app) => {
 			return databaseStatement + '\n\n' + useStatement + '\n\n' + schemaStatement;
 		},
 
+		createDefaultConstraint(data, tableName, terminator = ';') {
+			return createDefaultConstraint(templates, terminator)(data, tableName);
+		},
+
 		createTable(
 			{
 				name,
@@ -161,20 +164,15 @@ module.exports = (baseProvider, options, app) => {
 				comment: tableComment ? `\n${tableComment}` : '',
 				columnComments: columnComments ? `${tableAndColumnCommentsSeparator}${columnComments}\n` : '',
 			});
-			const defaultConstraintsStatements = defaultConstraints
-				.map(data => createDefaultConstraint(templates, tableTerminator)(data, tableName))
-				.join('\n');
-
-			const fullTableStatement = [tableStatement, defaultConstraintsStatements].filter(Boolean).join('\n\n');
 
 			return ifNotExist
 				? wrapIfNotExistTable({
-						tableStatement: fullTableStatement,
+						tableStatement,
 						templates,
 						tableName: getTableName(name, schemaData.schemaName, false),
 						terminator,
 					})
-				: fullTableStatement;
+				: tableStatement;
 		},
 
 		createComputedColumn({ name, computedExpression, persisted, primaryKey, unique, notNull }) {
@@ -201,11 +199,7 @@ module.exports = (baseProvider, options, app) => {
 			const primaryKey = columnDefinition.primaryKey
 				? ' ' + createPKConstraint(templates, terminator, true)(columnDefinition.primaryKeyOptions).statement
 				: '';
-			const defaultValue = getDefaultValue(
-				columnDefinition.default,
-				columnDefinition.defaultConstraint?.name,
-				type,
-			);
+			const defaultValue = getDefaultValue(columnDefinition.defaultConstraint, type);
 			const sparse = columnDefinition.sparse ? ' SPARSE' : '';
 			const maskedWithFunction = columnDefinition.maskedWithFunction
 				? ` MASKED WITH (FUNCTION='${columnDefinition.maskedWithFunction}')`
@@ -464,7 +458,6 @@ module.exports = (baseProvider, options, app) => {
 				_.get(parentJsonSchema, 'periodForSystemTime[0].startTime[0].type', '') === 'hidden';
 
 			return Object.assign({}, columnDefinition, {
-				default: jsonSchema.defaultConstraintName ? '' : columnDefinition.default,
 				defaultConstraint: {
 					name: jsonSchema.defaultConstraintName,
 					value: columnDefinition.default,
@@ -547,7 +540,6 @@ module.exports = (baseProvider, options, app) => {
 			return Object.assign({}, tableData, {
 				foreignKeyConstraints: tableData.foreignKeyConstraints || [],
 				keyConstraints: keyHelper.getTableKeyConstraints({ jsonSchema }),
-				defaultConstraints: getDefaultConstraints(tableData.columnDefinitions),
 				ifNotExist: jsonSchema.ifNotExist,
 				comment: jsonSchema.description,
 				columnDefinitions: tableData.columnDefinitions,

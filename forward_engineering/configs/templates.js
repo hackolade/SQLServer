@@ -11,7 +11,7 @@ module.exports = {
 		')${options}${terminator}\n${comment}${columnComments}',
 
 	columnDefinition:
-		'[${name}] ${type}${primary_key}${temporalTableTime}${sparse}${maskedWithFunction}${identity}${default}${collation}${not_null}${encryptedWith}',
+		'[${name}] ${type}${primary_key}${temporalTableTime}${sparse}${maskedWithFunction}${identity}${collation}${not_null}${default}${encryptedWith}',
 	computedColumnDefinition: '[${name}] AS ${expression}${persisted}${key}${not_null}',
 
 	index:
