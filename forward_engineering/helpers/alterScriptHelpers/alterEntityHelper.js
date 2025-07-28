@@ -9,6 +9,7 @@ module.exports = (app, options) => {
 	const { generateIdToNameHashTable, generateIdToActivatedHashTable } = app.require('@hackolade/ddl-fe-utils');
 	const { setIndexKeys, modifyGroupItems } = require('./common')(app);
 	const { getRenameColumnScriptsDto } = require('./columnHelpers/renameColumnHelpers')(app, ddlProvider);
+	const { getDefaultValueChangeDto } = require('./columnHelpers/defaultValueColumnHelper')(app, ddlProvider);
 	const { getChangedComputedColumnsScriptsDto } = require('./columnHelpers/alterComputedColumnHelpr')(
 		app,
 		ddlProvider,
@@ -199,6 +200,7 @@ module.exports = (app, options) => {
 			collectionSchema,
 			schemaName,
 		);
+		const modifiedDefaultValues = getDefaultValueChangeDto(collection, fullName);
 		const changedComputedScriptsDtos = getChangedComputedColumnsScriptsDto({
 			collection,
 			fullName,
@@ -210,6 +212,7 @@ module.exports = (app, options) => {
 			...renameColumnScriptsDtos,
 			...changeTypeScriptsDtos,
 			...modifyNotNullScriptDtos,
+			...modifiedDefaultValues,
 			...changedComputedScriptsDtos,
 		].filter(Boolean);
 	};

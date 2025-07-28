@@ -17,14 +17,22 @@ module.exports = app => {
 		return withBrackets(tableName);
 	};
 
-	const getDefaultValue = (defaultValue, defaultConstraintName, type) => {
-		if (_.isUndefined(defaultValue)) {
+	const getDefaultValue = (defaultConstraint, type) => {
+		if (_.isUndefined(defaultConstraint.value)) {
 			return '';
 		}
-		if (!_.isUndefined(defaultConstraintName)) {
-			return '';
+
+		const value = decorateDefault(type, defaultConstraint.value);
+
+		if (!_.isUndefined(defaultConstraint.name)) {
+			return ` CONSTRAINT ${defaultConstraint.name} DEFAULT ${value}`;
 		}
-		return ` DEFAULT ${decorateDefault(type, defaultValue)}`;
+
+		return ` DEFAULT ${value}`;
+	};
+
+	const sanitizeConstraintName = str => {
+		return str ? str.replace(/\[|\]/g, '').replace(/\./g, '_') : str;
 	};
 
 	const getKeyWithAlias = key => {
@@ -189,22 +197,6 @@ module.exports = app => {
 		}, {});
 	};
 
-	const getDefaultConstraints = columnDefinitions => {
-		if (!Array.isArray(columnDefinitions)) {
-			return [];
-		}
-
-		return columnDefinitions
-			.filter(
-				column => _.get(column, 'defaultConstraint.name') && !_.isNil(_.get(column, 'defaultConstraint.value')),
-			)
-			.map(column => ({
-				columnName: column.name,
-				constraintName: column.defaultConstraint.name,
-				value: decorateDefault(column.type, column.defaultConstraint.value),
-			}));
-	};
-
 	const foreignKeysToString = keys => {
 		if (Array.isArray(keys)) {
 			const activatedKeys = keys
@@ -266,10 +258,10 @@ module.exports = app => {
 		getTableOptions,
 		hasType,
 		getViewData,
-		getDefaultConstraints,
 		foreignKeysToString,
 		additionalPropertiesForForeignKey,
 		trimBraces,
+		sanitizeConstraintName,
 		checkIndexActivated,
 		foreignActiveKeysToString,
 		getDefaultValue,
