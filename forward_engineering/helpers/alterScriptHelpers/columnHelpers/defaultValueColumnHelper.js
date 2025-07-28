@@ -7,7 +7,7 @@ module.exports = (app, ddlProvider) => {
 
 		const getDefaultConstraintName = columnName => sanitizeConstraintName(`DF_${fullName}_${columnName}`);
 
-		Object.entries(collection.properties).forEach(([columnName, collectionSchema]) => {
+		Object.entries(collection?.properties ?? []).forEach(([columnName, collectionSchema]) => {
 			const newDefaultValue = collectionSchema.default;
 			const newConstraintName = collectionSchema.defaultConstraintName;
 			const oldDefaultValue = collection.role.properties[columnName]?.default;
