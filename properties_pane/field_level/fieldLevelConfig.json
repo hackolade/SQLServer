@@ -5123,6 +5123,106 @@ making sure that you maintain a proper JSON format.
 				"propertyType": "details",
 				"template": "textarea"
 			}
+		],
+		"json": [
+			"name",
+			"code",
+			"schemaId",
+			"type",
+			{
+				"propertyName": "JSON Type",
+				"propertyKeyword": "physicalType",
+				"propertyType": "select",
+				"hidden": true
+			},
+			{
+				"propertyName": "JSON Types",
+				"propertyKeyword": "subtype",
+				"propertyType": "select",
+				"options": [
+					{
+						"name": "object",
+						"value": "object"
+					},
+					{
+						"name": "array",
+						"value": "array"
+					},
+					{
+						"name": "string",
+						"value": "string"
+					},
+					{
+						"name": "number",
+						"value": "number"
+					},
+					{
+						"name": "boolean",
+						"value": "boolean"
+					},
+					{
+						"name": "null",
+						"value": "null"
+					}
+				],
+				"defaultValue": "object"
+			},
+			{
+				"propertyName": "Min Properties",
+				"propertyKeyword": "minProperties",
+				"propertyType": "numeric",
+				"dependency": {
+					"key": "subtype",
+					"value": "object"
+				}
+			},
+			{
+				"propertyName": "Max Properties",
+				"propertyKeyword": "maxProperties",
+				"propertyType": "numeric",
+				"dependency": {
+					"key": "subtype",
+					"value": "object"
+				}
+			},
+			{
+				"propertyName": "Default",
+				"propertyKeyword": "default",
+				"propertyType": "text"
+			},
+			{
+				"propertyName": "Default constraint name",
+				"propertyKeyword": "defaultConstraintName",
+				"propertyType": "text"
+			},
+			{
+				"propertyName": "Comments",
+				"propertyKeyword": "description",
+				"propertyTooltip": "comments",
+				"addTimestampButton": false,
+				"propertyType": "details",
+				"template": "textarea"
+			},
+			{
+				"propertyName": "Not null",
+				"propertyKeyword": "required",
+				"enableForReference": true,
+				"propertyType": "checkbox",
+				"defaultValue": false
+			},
+			"foreignCollection",
+			"foreignField",
+			"relationshipType",
+			"sample",
+			{
+				"propertyName": "Remarks",
+				"propertyKeyword": "comments",
+				"shouldValidate": false,
+				"propertyTooltip": "remarks",
+				"addTimestampButton": true,
+				"propertyType": "details",
+				"template": "textarea"
+			}
 		]
 	}
 }
