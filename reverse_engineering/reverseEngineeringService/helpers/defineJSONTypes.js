@@ -16,7 +16,7 @@ const defineType = value => {
 };
 
 const handleField = (name, properties, cellValue) => {
-	if (!cellValue || properties.mode !== 'nvarchar') {
+	if (!cellValue || (properties.mode !== 'nvarchar' && properties.type !== 'json')) {
 		return { [name]: properties };
 	}
 
@@ -68,7 +68,7 @@ const defineJSONTypes = row => jsonSchema => {
 };
 
 const getColumnValue = (firstRow, fieldName, fieldProperties, rows) => {
-	if (!['varchar', 'nvarchar'].includes(fieldProperties.mode)) {
+	if (!['varchar', 'nvarchar', 'json'].includes(fieldProperties.mode)) {
 		return firstRow[fieldName];
 	}
 	const complexValueRow = rows.find(row => {
