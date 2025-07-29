@@ -5147,22 +5147,6 @@ making sure that you maintain a proper JSON format.
 					{
 						"name": "array",
 						"value": "array"
-					},
-					{
-						"name": "string",
-						"value": "string"
-					},
-					{
-						"name": "number",
-						"value": "number"
-					},
-					{
-						"name": "boolean",
-						"value": "boolean"
-					},
-					{
-						"name": "null",
-						"value": "null"
 					}
 				],
 				"defaultValue": "object"

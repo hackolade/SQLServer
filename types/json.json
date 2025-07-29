@@ -24,18 +24,6 @@
 		"array": {
 			"parentType": "jsonArray",
 			"childValueType": ["jsonString", "jsonNumber", "jsonObject", "jsonArray", "jsonBoolean", "jsonNull"]
-		},
-		"string": {
-			"parentType": "jsonString"
-		},
-		"number": {
-			"parentType": "jsonNumber"
-		},
-		"boolean": {
-			"parentType": "jsonBoolean"
-		},
-		"null": {
-			"parentType": "jsonNull"
 		}
 	},
 	"dependency": {
