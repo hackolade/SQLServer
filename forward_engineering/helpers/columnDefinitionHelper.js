@@ -67,7 +67,7 @@ module.exports = app => {
 
 	const decorateDefault = (type, defaultValue) => {
 		if (isString(type) && defaultValue !== 'NULL') {
-			return `'${escapeQuotes(defaultValue)}'`;
+			return escapeQuotes(defaultValue);
 		} else if (type === 'XML') {
 			return `CAST(N'${defaultValue}' AS xml)`;
 		}
