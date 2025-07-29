@@ -23,7 +23,7 @@ module.exports = {
 
 	spatialIndex: 'CREATE SPATIAL INDEX ${name} ON ${table} (${column})${using}\n${options}${terminator}\n',
 
-	checkConstraint: 'CONSTRAINT [${name}] CHECK${notForReplication} (${expression})',
+	checkConstraint: 'CONSTRAINT [${name}] ${check}${notForReplication} (${expression})',
 
 	createForeignKeyConstraint:
 		'CONSTRAINT ${name} FOREIGN KEY (${foreignKey}) REFERENCES ${primaryTable} (${primaryKey}) ${onDelete}${onUpdate}',
