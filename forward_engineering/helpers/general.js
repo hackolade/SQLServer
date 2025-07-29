@@ -251,6 +251,20 @@ module.exports = app => {
 		return '';
 	};
 
+	/**
+	 * @param {Object} params
+	 * @param {string} params.primaryTableName
+	 * @param {string} params.foreignTableName
+	 * @param {Array<AlterRelationshipFKField>} params.primaryTableColumns
+	 * @param {Array<AlterRelationshipFKField>} params.foreignTableColumns
+	 * @returns {string}
+	 */
+	const getFKConstraintName = ({ primaryTableName, foreignTableName, primaryTableColumns, foreignTableColumns }) => {
+		return sanitizeConstraintName(
+			`FK_${[primaryTableName, foreignTableColumns.map(k => k.name).join('_'), foreignTableName, primaryTableColumns.map(k => k.name).join('_')].filter(Boolean).join('_')}`,
+		);
+	};
+
 	return {
 		filterColumnStoreProperties,
 		getKeyWithAlias,
@@ -266,5 +280,6 @@ module.exports = app => {
 		foreignActiveKeysToString,
 		getDefaultValue,
 		getTempTableTime,
+		getFKConstraintName,
 	};
 };

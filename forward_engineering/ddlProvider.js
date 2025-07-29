@@ -31,6 +31,7 @@ module.exports = (baseProvider, options, app) => {
 		getTempTableTime,
 		foreignActiveKeysToString,
 		additionalPropertiesForForeignKey,
+		getFKConstraintName,
 	} = require('./helpers/general')(app);
 	const keyHelper = require('./helpers/keyHelper')(app);
 	const { getTerminator } = require('./helpers/optionsHelper');
@@ -285,12 +286,21 @@ module.exports = (baseProvider, options, app) => {
 				primaryTableActivated &&
 				foreignTableActivated;
 
+			const relationshipName =
+				name ||
+				getFKConstraintName({
+					primaryTableName: primaryTable,
+					foreignTableName: '',
+					primaryTableColumns: primaryKey,
+					foreignTableColumns: foreignKey,
+				});
+
 			const { foreignOnDelete, foreignOnUpdate } = additionalPropertiesForForeignKey(customProperties);
 
 			return {
 				statement: assignTemplates(templates.createForeignKeyConstraint, {
 					primaryTable: getTableName(primaryTable, primarySchemaName || schemaData.schemaName, true),
-					name: wrapInBrackets(name),
+					name: wrapInBrackets(relationshipName),
 					foreignKey: isActivated ? foreignKeysToString(foreignKey) : foreignActiveKeysToString(foreignKey),
 					primaryKey: isActivated ? foreignKeysToString(primaryKey) : foreignActiveKeysToString(primaryKey),
 					onDelete: foreignOnDelete ? ` ON DELETE ${foreignOnDelete}` : '',
@@ -320,11 +330,20 @@ module.exports = (baseProvider, options, app) => {
 
 			const { foreignOnDelete, foreignOnUpdate } = additionalPropertiesForForeignKey(customProperties);
 
+			const relationshipName =
+				name ||
+				getFKConstraintName({
+					primaryTableName: primaryTable,
+					foreignTableName: foreignTable,
+					primaryTableColumns: primaryKey,
+					foreignTableColumns: foreignKey,
+				});
+
 			return {
 				statement: assignTemplates(templates.createForeignKey, {
 					primaryTable: getTableName(primaryTable, schemaData.schemaName, true),
 					foreignTable: getTableName(foreignTable, schemaData.schemaName, true),
-					name: wrapInBrackets(name),
+					name: wrapInBrackets(relationshipName),
 					foreignKey: foreignKeysToString(foreignKey),
 					primaryKey: foreignKeysToString(primaryKey),
 					onDelete: foreignOnDelete ? ` ON DELETE ${foreignOnDelete}` : '',
