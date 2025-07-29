@@ -22,13 +22,11 @@ module.exports = app => {
 			return '';
 		}
 
-		const value = decorateDefault(type, defaultConstraint.value);
-
 		if (!_.isUndefined(defaultConstraint.name)) {
-			return ` CONSTRAINT ${defaultConstraint.name} DEFAULT ${value}`;
+			return ` CONSTRAINT ${defaultConstraint.name} DEFAULT ${defaultConstraint.value}`;
 		}
 
-		return ` DEFAULT ${value}`;
+		return ` DEFAULT ${defaultConstraint.value}`;
 	};
 
 	const sanitizeConstraintName = str => {
