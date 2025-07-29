@@ -63,7 +63,6 @@ const canRelationshipBeAdded = relationship => {
 		return false;
 	}
 	return [
-		compMod.name?.new || getRelationshipName(relationship),
 		compMod.parent?.bucket,
 		compMod.parent?.collection,
 		compMod.parent?.collection?.fkFields?.length,
