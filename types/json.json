@@ -1,0 +1,81 @@
+{
+	"name": "json",
+	"erdAbbreviation": "<json>",
+	"dtdAbbreviation": "{...}",
+	"parentType": "jsonObject",
+	"hiddenOnEntity": "view",
+	"jsonType": {
+		"order": 2,
+		"name": "json",
+		"jsonRoot": true
+	},
+	"defaultValues": {
+		"primaryKey": false,
+		"additionalProperties": false,
+		"mode": "json",
+		"subtype": "object",
+		"properties": []
+	},
+	"subtypes": {
+		"object": {
+			"parentType": "jsonObject",
+			"childValueType": ["jsonString", "jsonNumber", "jsonObject", "jsonArray", "jsonBoolean", "jsonNull"]
+		},
+		"array": {
+			"parentType": "jsonArray",
+			"childValueType": ["jsonString", "jsonNumber", "jsonObject", "jsonArray", "jsonBoolean", "jsonNull"]
+		},
+		"string": {
+			"parentType": "jsonString"
+		},
+		"number": {
+			"parentType": "jsonNumber"
+		},
+		"boolean": {
+			"parentType": "jsonBoolean"
+		},
+		"null": {
+			"parentType": "jsonNull"
+		}
+	},
+	"dependency": {
+		"type": "not",
+		"values": [
+			{
+				"level": "model",
+				"key": "dbVersion",
+				"value": "2008"
+			},
+			{
+				"level": "model",
+				"key": "dbVersion",
+				"value": "2012"
+			},
+			{
+				"level": "model",
+				"key": "dbVersion",
+				"value": "2014"
+			},
+			{
+				"level": "model",
+				"key": "dbVersion",
+				"value": "2016"
+			},
+			{
+				"level": "model",
+				"key": "dbVersion",
+				"value": "2017"
+			},
+			{
+				"level": "model",
+				"key": "dbVersion",
+				"value": "2019"
+			},
+			{
+				"level": "model",
+				"key": "dbVersion",
+				"value": "2022"
+			}
+		]
+	}
+}
