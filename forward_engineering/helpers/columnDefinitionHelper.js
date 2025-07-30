@@ -68,11 +68,11 @@ module.exports = app => {
 	 * @param {string} str
 	 * @returns {string}
 	 */
-	const escapeQuotes = str => _.trim(str).replace(/(?<!^)'(?!$)/g, "''");
+	const escapeQuotes = str => _.trim(str).replace(/(\')+/g, "'$1");
 
 	const decorateDefault = (type, defaultValue) => {
 		if (isString(type) && defaultValue !== 'NULL') {
-			return escapeQuotes(defaultValue);
+			return `'${escapeQuotes(defaultValue)}'`;
 		} else if (type === 'XML') {
 			return `CAST(N'${defaultValue}' AS xml)`;
 		}
