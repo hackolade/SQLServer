@@ -63,6 +63,11 @@ module.exports = app => {
 
 	const isString = type => ['CHAR', 'VARCHAR', 'NCHAR', 'NVARCHAR', 'TEXT', 'NTEXT'].includes(_.toUpper(type));
 
+	/**
+	 * Escape only inner single quotes.
+	 * @param {string} str
+	 * @returns {string}
+	 */
 	const escapeQuotes = str => _.trim(str).replace(/(\')+/g, "'$1");
 
 	const decorateDefault = (type, defaultValue) => {
