@@ -1,6 +1,8 @@
 module.exports = (app, ddlProvider) => {
+	const _ = app.require('lodash');
 	const { AlterScriptDto } = require('../types/AlterScriptDto');
-	const { sanitizeConstraintName } = require('../../../helpers/general')(app);
+	const { sanitizeConstraintName, hasType, getTableName } = require('../../../helpers/general')(app);
+	const { decorateDefault } = require('../../columnDefinitionHelper')(app);
 
 	const getDefaultValueChangeDto = (collection, fullName) => {
 		const scripts = [];
@@ -8,6 +10,10 @@ module.exports = (app, ddlProvider) => {
 		const getDefaultConstraintName = columnName => sanitizeConstraintName(`DF_${fullName}_${columnName}`);
 
 		Object.entries(collection?.properties ?? []).forEach(([columnName, collectionSchema]) => {
+			const type = hasType(collectionSchema.type)
+				? _.toUpper(collectionSchema.type)
+				: getTableName(collectionSchema.type, collectionSchema.schemaName);
+
 			const newDefaultValue = collectionSchema.default;
 			const newConstraintName = collectionSchema.defaultConstraintName;
 			const oldDefaultValue = collection.role.properties[columnName]?.default;
@@ -24,6 +30,7 @@ module.exports = (app, ddlProvider) => {
 				!!oldConstraintName &&
 				!!newConstraintName &&
 				oldConstraintName !== newConstraintName;
+			const decoratedValue = decorateDefault(type, newDefaultValue);
 
 			switch (true) {
 				case defaultValueWasRemoved: {
@@ -40,7 +47,7 @@ module.exports = (app, ddlProvider) => {
 						{
 							constraintName,
 							columnName,
-							value: newDefaultValue,
+							value: decoratedValue,
 						},
 						fullName,
 					);
@@ -58,7 +65,7 @@ module.exports = (app, ddlProvider) => {
 						{
 							constraintName,
 							columnName,
-							value: newDefaultValue,
+							value: decoratedValue,
 						},
 						fullName,
 					);
@@ -72,7 +79,7 @@ module.exports = (app, ddlProvider) => {
 						{
 							constraintName: newConstraintName,
 							columnName,
-							value: newDefaultValue,
+							value: decoratedValue,
 						},
 						fullName,
 					);
