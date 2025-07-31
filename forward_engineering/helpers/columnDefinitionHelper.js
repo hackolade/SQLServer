@@ -63,16 +63,9 @@ module.exports = app => {
 
 	const isString = type => ['CHAR', 'VARCHAR', 'NCHAR', 'NVARCHAR', 'TEXT', 'NTEXT'].includes(_.toUpper(type));
 
-	/**
-	 * Escape only inner single quotes.
-	 * @param {string} str
-	 * @returns {string}
-	 */
-	const escapeQuotes = str => _.trim(str).replace(/(\')+/g, '');
-
 	const decorateDefault = (type, defaultValue) => {
 		if (type === 'XML') {
-			return `CAST(N'${escapeQuotes(defaultValue)}' AS xml)`;
+			return `CAST(N'${defaultValue}' AS xml)`;
 		}
 
 		return defaultValue;
