@@ -99,12 +99,16 @@ const getUpdateCheckConstraintScriptDtos = (_, ddlProvider) => (constraintHistor
 		.map(historyEntry => {
 			const { chkConstrName: oldConstrainName } = historyEntry.old;
 			const dropConstraintScript = ddlProvider.dropConstraint(fullTableName, wrapInBrackets(oldConstrainName));
-
-			const { chkConstrName: newConstrainName, constrExpression: newConstraintExpression } = historyEntry.new;
+			const {
+				chkConstrName: newConstrainName,
+				constrCheck,
+				constrExpression: newConstraintExpression,
+			} = historyEntry.new;
 			const addConstraintScript = ddlProvider.addCheckConstraint(
 				fullTableName,
 				wrapInBrackets(newConstrainName),
 				newConstraintExpression,
+				constrCheck,
 			);
 
 			return [
