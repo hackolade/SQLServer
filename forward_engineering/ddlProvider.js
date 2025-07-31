@@ -258,7 +258,7 @@ module.exports = (baseProvider, options, app) => {
 		createCheckConstraint(checkConstraint, isInline = true) {
 			return assignTemplates(templates.checkConstraint, {
 				name: checkConstraint.name,
-				check: checkConstraint.check || isInline ? 'CHECK' : 'NO CHECK',
+				check: checkConstraint.check || isInline ? 'CHECK' : 'NOCHECK',
 				notForReplication: checkConstraint.enforceForReplication ? '' : ' NOT FOR REPLICATION',
 				expression: _.trim(checkConstraint.expression).replace(/^\(([\s\S]*)\)$/, '$1'),
 				terminator,
@@ -977,7 +977,7 @@ module.exports = (baseProvider, options, app) => {
 				constraintName,
 				expression,
 				terminator,
-				check: check ? 'CHECK' : 'NO CHECK',
+				check: check ? 'CHECK' : 'NOCHECK',
 			};
 			return assignTemplates(templates.addCheckConstraint, templateConfig);
 		},
