@@ -74,7 +74,8 @@ module.exports = {
 
 	addColumn: 'ADD ${script}',
 
-	addCheckConstraint: 'ALTER TABLE ${tableName} ADD CONSTRAINT ${constraintName} CHECK (${expression})${terminator}',
+	addCheckConstraint:
+		'ALTER TABLE ${tableName} ADD CONSTRAINT ${constraintName} ${check} (${expression})${terminator}',
 
 	addNotNullConstraint: 'ALTER TABLE ${tableName} ALTER COLUMN ${columnName} ${columnType} NOT NULL${terminator}',
 

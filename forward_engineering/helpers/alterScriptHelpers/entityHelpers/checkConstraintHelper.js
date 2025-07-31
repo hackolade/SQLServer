@@ -66,8 +66,13 @@ const getAddCheckConstraintScriptDtos = (_, ddlProvider) => (constraintHistory, 
 	return constraintHistory
 		.filter(historyEntry => historyEntry.new && !historyEntry.old)
 		.map(historyEntry => {
-			const { chkConstrName, constrExpression } = historyEntry.new;
-			return ddlProvider.addCheckConstraint(fullTableName, wrapInBrackets(chkConstrName), constrExpression);
+			const { chkConstrName, constrCheck, constrExpression } = historyEntry.new;
+			return ddlProvider.addCheckConstraint(
+				fullTableName,
+				wrapInBrackets(chkConstrName),
+				constrExpression,
+				constrCheck,
+			);
 		})
 		.map(script => AlterScriptDto.getInstance([script], true, false));
 };
