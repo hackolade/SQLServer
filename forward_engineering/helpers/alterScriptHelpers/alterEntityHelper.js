@@ -43,7 +43,7 @@ module.exports = (app, options) => {
 			}),
 		);
 		const checkConstraints = (jsonSchema.chkConstr || []).map(check =>
-			ddlProvider.createCheckConstraint(ddlProvider.hydrateCheckConstraint(check)),
+			ddlProvider.createCheckConstraint(ddlProvider.hydrateCheckConstraint(check), true),
 		);
 		const tableData = {
 			name: tableName,
