@@ -255,10 +255,9 @@ module.exports = (baseProvider, options, app) => {
 			return createTableIndex(terminator, tableName, index, isActivated && isParentActivated);
 		},
 
-		createCheckConstraint(checkConstraint, isInline = true) {
+		createCheckConstraint(checkConstraint) {
 			return assignTemplates(templates.checkConstraint, {
 				name: checkConstraint.name,
-				check: checkConstraint.check || isInline ? 'CHECK' : 'NOCHECK',
 				notForReplication: checkConstraint.enforceForReplication ? '' : ' NOT FOR REPLICATION',
 				expression: _.trim(checkConstraint.expression).replace(/^\(([\s\S]*)\)$/, '$1'),
 				terminator,
@@ -717,7 +716,7 @@ module.exports = (baseProvider, options, app) => {
 		alterTableAddCheckConstraint(fullTableName, checkConstraint) {
 			return assignTemplates(templates.alterTableAddConstraint, {
 				tableName: fullTableName,
-				constraint: this.createCheckConstraint(checkConstraint, false),
+				constraint: this.createCheckConstraint(checkConstraint),
 				terminator,
 			});
 		},
@@ -977,7 +976,7 @@ module.exports = (baseProvider, options, app) => {
 				constraintName,
 				expression,
 				terminator,
-				check: check ? 'CHECK' : 'NOCHECK',
+				noCheck: check ? '' : ' WITH NOCHECK',
 			};
 			return assignTemplates(templates.addCheckConstraint, templateConfig);
 		},
