@@ -977,7 +977,7 @@ module.exports = (baseProvider, options, app) => {
 				constraintName,
 				expression,
 				terminator,
-				check: check ? 'CHECK' : 'NOCHECK',
+				noCheck: check ? '' : ' WITH NOCHECK',
 			};
 			return assignTemplates(templates.addCheckConstraint, templateConfig);
 		},

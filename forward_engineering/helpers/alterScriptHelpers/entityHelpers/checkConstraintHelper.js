@@ -91,8 +91,9 @@ const getUpdateCheckConstraintScriptDtos = (_, ddlProvider) => (constraintHistor
 				const oldName = historyEntry.old.chkConstrName;
 				const newName = historyEntry.new.chkConstrName;
 				const hasOnlyNameChanged = oldExpression === newName && newName !== oldName;
+				const hasCheckChanged = historyEntry.old.constrCheck !== historyEntry.new.constrCheck;
 
-				return oldExpression !== newExpression || hasOnlyNameChanged;
+				return oldExpression !== newExpression || hasOnlyNameChanged || hasCheckChanged;
 			}
 			return false;
 		})
