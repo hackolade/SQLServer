@@ -23,7 +23,8 @@
 				"table",
 				"reference",
 				"multiple",
-				"object"
+				"object",
+				"json"
 			]
 		}
 	}

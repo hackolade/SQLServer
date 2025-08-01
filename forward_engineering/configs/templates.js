@@ -23,7 +23,7 @@ module.exports = {
 
 	spatialIndex: 'CREATE SPATIAL INDEX ${name} ON ${table} (${column})${using}\n${options}${terminator}\n',
 
-	checkConstraint: 'CONSTRAINT [${name}] ${check}${notForReplication} (${expression})',
+	checkConstraint: 'CONSTRAINT [${name}] CHECK${notForReplication} (${expression})',
 
 	createForeignKeyConstraint:
 		'CONSTRAINT ${name} FOREIGN KEY (${foreignKey}) REFERENCES ${primaryTable} (${primaryKey}) ${onDelete}${onUpdate}',
@@ -74,7 +74,8 @@ module.exports = {
 
 	addColumn: 'ADD ${script}',
 
-	addCheckConstraint: 'ALTER TABLE ${tableName} ADD CONSTRAINT ${constraintName} CHECK (${expression})${terminator}',
+	addCheckConstraint:
+		'ALTER TABLE ${tableName}${noCheck} ADD CONSTRAINT ${constraintName} CHECK (${expression})${terminator}',
 
 	addNotNullConstraint: 'ALTER TABLE ${tableName} ALTER COLUMN ${columnName} ${columnType} NOT NULL${terminator}',
 

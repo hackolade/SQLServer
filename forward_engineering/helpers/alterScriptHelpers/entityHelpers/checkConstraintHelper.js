@@ -66,8 +66,13 @@ const getAddCheckConstraintScriptDtos = (_, ddlProvider) => (constraintHistory, 
 	return constraintHistory
 		.filter(historyEntry => historyEntry.new && !historyEntry.old)
 		.map(historyEntry => {
-			const { chkConstrName, constrExpression } = historyEntry.new;
-			return ddlProvider.addCheckConstraint(fullTableName, wrapInBrackets(chkConstrName), constrExpression);
+			const { chkConstrName, constrCheck, constrExpression } = historyEntry.new;
+			return ddlProvider.addCheckConstraint(
+				fullTableName,
+				wrapInBrackets(chkConstrName),
+				constrExpression,
+				constrCheck,
+			);
 		})
 		.map(script => AlterScriptDto.getInstance([script], true, false));
 };
@@ -86,20 +91,25 @@ const getUpdateCheckConstraintScriptDtos = (_, ddlProvider) => (constraintHistor
 				const oldName = historyEntry.old.chkConstrName;
 				const newName = historyEntry.new.chkConstrName;
 				const hasOnlyNameChanged = oldExpression === newName && newName !== oldName;
+				const hasCheckChanged = historyEntry.old.constrCheck !== historyEntry.new.constrCheck;
 
-				return oldExpression !== newExpression || hasOnlyNameChanged;
+				return oldExpression !== newExpression || hasOnlyNameChanged || hasCheckChanged;
 			}
 			return false;
 		})
 		.map(historyEntry => {
 			const { chkConstrName: oldConstrainName } = historyEntry.old;
 			const dropConstraintScript = ddlProvider.dropConstraint(fullTableName, wrapInBrackets(oldConstrainName));
-
-			const { chkConstrName: newConstrainName, constrExpression: newConstraintExpression } = historyEntry.new;
+			const {
+				chkConstrName: newConstrainName,
+				constrCheck,
+				constrExpression: newConstraintExpression,
+			} = historyEntry.new;
 			const addConstraintScript = ddlProvider.addCheckConstraint(
 				fullTableName,
 				wrapInBrackets(newConstrainName),
 				newConstraintExpression,
+				constrCheck,
 			);
 
 			return [

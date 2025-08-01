@@ -1,5 +1,9 @@
 const containsJson = ({ tableInfo }) =>
 	tableInfo.some(item => {
+		if (item['DATA_TYPE'] === 'json') {
+			return true;
+		}
+
 		if (item['DATA_TYPE'] !== 'nvarchar') {
 			return false;
 		}

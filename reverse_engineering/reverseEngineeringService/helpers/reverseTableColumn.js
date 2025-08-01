@@ -39,7 +39,7 @@ const handleType = type => {
 		case 'xml':
 		case 'cursor':
 		case 'rowversion':
-			return { type };
+		case 'json':
 		default:
 			return { type };
 	}

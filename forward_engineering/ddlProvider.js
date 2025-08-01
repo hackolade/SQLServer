@@ -258,7 +258,6 @@ module.exports = (baseProvider, options, app) => {
 		createCheckConstraint(checkConstraint) {
 			return assignTemplates(templates.checkConstraint, {
 				name: checkConstraint.name,
-				check: checkConstraint.check ? 'CHECK' : 'NO CHECK',
 				notForReplication: checkConstraint.enforceForReplication ? '' : ' NOT FOR REPLICATION',
 				expression: _.trim(checkConstraint.expression).replace(/^\(([\s\S]*)\)$/, '$1'),
 				terminator,
@@ -971,12 +970,13 @@ module.exports = (baseProvider, options, app) => {
 			});
 		},
 
-		addCheckConstraint(tableName, constraintName, expression) {
+		addCheckConstraint(tableName, constraintName, expression, check) {
 			const templateConfig = {
 				tableName,
 				constraintName,
 				expression,
 				terminator,
+				noCheck: check ? '' : ' WITH NOCHECK',
 			};
 			return assignTemplates(templates.addCheckConstraint, templateConfig);
 		},

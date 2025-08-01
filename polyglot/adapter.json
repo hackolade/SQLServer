@@ -94,6 +94,19 @@
 				"from": { "childType": "timestamp_ntz" },
 				"to": { "mode": "datetime2", "childType": "datetime" }
 			},
+			/**
+			 * It is a bit tricky adapter. Here we rely on the type detection priority of application. Keyword "mode" has higher
+			 * priority, so it will be used first and when available (in SQL Server 2025 and higher) it will be used. When not available
+			 * it will try to use "childType" and convert the type to "varchar" which is available in all version of SQL Server.
+			 */
+			{
+				"from": { "type": "json" },
+				"to": {
+					"hasMaxLength": true,
+					"childType": "varchar",
+					"mode": "json"
+				}
+			},
 			["convertLengthToHasMaxLength", 8001],
 			[
 				"renameBlockItemProperties",
@@ -108,29 +121,5 @@
 				}
 			]
 		]
-	},
-	"postConvert": {
-		"modify": {
-			"field": [
-				{
-					"from": {
-						"type": "jsonObject"
-					},
-					"to": {
-						"hasMaxLength": true,
-						"mode": "varchar"
-					}
-				},
-				{
-					"from": {
-						"type": "jsonArray"
-					},
-					"to": {
-						"hasMaxLength": true,
-						"mode": "varchar"
-					}
-				}
-			]
-		}
 	}
 }

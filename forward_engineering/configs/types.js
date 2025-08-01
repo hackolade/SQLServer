@@ -117,4 +117,7 @@ module.exports = {
 	TABLE: {
 		mode: 'table',
 	},
+	JSON: {
+		format: 'semi-structured',
+	},
 };
