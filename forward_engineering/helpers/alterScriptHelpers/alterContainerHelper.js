@@ -55,7 +55,15 @@ module.exports = (app, options) => {
 				return undefined;
 			}
 
-			script = getUpdateSchemaCommentScript({ schemaName, comment: newComment });
+			if (!oldComment) {
+				script = ddlProvider.createSchemaComment({
+					schemaName,
+					comment: newComment,
+				});
+			} else {
+				script = getUpdateSchemaCommentScript({ schemaName, comment: newComment });
+			}
+
 			return AlterScriptDto.getInstance([script], true, false);
 		});
 	};

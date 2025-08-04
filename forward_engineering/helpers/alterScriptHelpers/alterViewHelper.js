@@ -185,7 +185,16 @@ module.exports = (app, options) => {
 					return undefined;
 				}
 
-				script = getViewUpdateCommentScript({ schemaName, viewName, comment: newComment });
+				if (!oldComment) {
+					script = ddlProvider.createViewComment({
+						schemaName,
+						viewName,
+						comment: newComment,
+					});
+				} else {
+					script = getViewUpdateCommentScript({ schemaName, viewName, comment: newComment });
+				}
+
 				return AlterScriptDto.getInstance([script], true, false);
 			})
 			.filter(Boolean);
