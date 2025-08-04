@@ -5128,7 +5128,12 @@ making sure that you maintain a proper JSON format.
 			"name",
 			"code",
 			"schemaId",
-			"type",
+			{
+				"propertyKeyword": "type",
+				"typeDecorator": {
+					"useAsTypeName": true
+				}
+			},
 			{
 				"propertyName": "JSON Type",
 				"propertyKeyword": "physicalType",
