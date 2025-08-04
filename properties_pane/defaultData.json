@@ -1,7 +1,7 @@
 {
 	"model": {
 		"modelName": "new_model",
-		"dbVersion": "2019",
+		"dbVersion": "2022",
 		"dbVendor": "MSSQLServer"
 	},
 	"container": {
