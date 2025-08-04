@@ -273,7 +273,15 @@ module.exports = (app, options) => {
 					return undefined;
 				}
 
-				script = getTableUpdateCommentScript({ schemaName, tableName, comment: newComment });
+				if (!oldComment) {
+					script = ddlProvider.createTableComment({
+						schemaName,
+						tableName,
+						comment: newComment,
+					});
+				} else {
+					script = getTableUpdateCommentScript({ schemaName, tableName, comment: newComment });
+				}
 
 				return AlterScriptDto.getInstance([script], true, false);
 			})
@@ -372,7 +380,22 @@ module.exports = (app, options) => {
 						return undefined;
 					}
 
-					script = getColumnUpdateCommentScript({ schemaName, tableName, columnName, comment: newComment });
+					if (!oldComment) {
+						script = getColumnCreateCommentScript({
+							schemaName,
+							tableName,
+							columnName,
+							comment: newComment,
+						});
+					} else {
+						script = getColumnUpdateCommentScript({
+							schemaName,
+							tableName,
+							columnName,
+							comment: newComment,
+						});
+					}
+
 					return AlterScriptDto.getInstance([script], true, false);
 				});
 			})

@@ -46,7 +46,6 @@ module.exports = (app, ddlProvider) => {
 			schemaData,
 		});
 		columnDefinition.nullable = toRemoveNotNull;
-
 		let sqlScripts = [];
 
 		const isComputedRemoved = prevJsonSchema.computed && !jsonSchema.computed;
