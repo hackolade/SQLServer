@@ -94,13 +94,9 @@ const getAddCompositeUKScriptDtos = (app, _, ddlProvider) => collection => {
 	const { fullTableName } = getCollectionNames(_, collection);
 
 	return newUniqueConstraints
-		.map(newConstraint => {
-			const keyData = getCompositeUniqueKeys({ ...collection, ...(collection?.role || {}) }, true)[0];
-
-			if (!keyData) {
-				return null;
-			}
-
+		.map(_ => getCompositeUniqueKeys({ ...collection, ...(collection?.role || {}) }, true)[0])
+		.filter(Boolean)
+		.map(keyData => {
 			const statementDto = ddlProvider.addUniqueConstraint(
 				fullTableName,
 				collection.isActivated,
@@ -116,7 +112,7 @@ const getAddCompositeUKScriptDtos = (app, _, ddlProvider) => collection => {
 				statementDto.isActivated,
 			);
 		})
-		.filter(scriptDto => Boolean(scriptDto?.script));
+		.filter(scriptDto => Boolean(scriptDto.script));
 };
 
 /**

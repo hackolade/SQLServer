@@ -285,7 +285,7 @@ const getAddCompositePkScriptDtos = (app, _, ddlProvider) => collection => {
 	const { fullTableName } = getCollectionNames(_, collection);
 
 	return newPrimaryKeys
-		.map(newPk => getCompositePrimaryKeys({ ...collection, ...(collection?.role || {}) }, true)[0])
+		.map(_ => getCompositePrimaryKeys({ ...collection, ...(collection?.role || {}) }, true)[0])
 		.filter(Boolean)
 		.map(keyData => {
 			const statementDto = ddlProvider.addPKConstraint(
