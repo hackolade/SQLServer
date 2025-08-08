@@ -72,7 +72,21 @@ making sure that you maintain a proper JSON format.
 				"propertyTooltip": "DB version",
 				"propertyType": "select",
 				"options": ["2008", "2012", "2014", "2016", "2017", "2019", "2022", "2025"],
-				"disabledOption": false
+				"disabledOption": false,
+				"adapters": [
+					{
+						"dependency": {
+							"type": "not",
+							"values": [
+								{
+									"key": "dbVersion",
+									"value": "2025"
+								}
+							]
+						},
+						"adapter": "adaptJsonTypesToVarchar"
+					}
+				]
 			},
 			{
 				"propertyName": "Comments",
