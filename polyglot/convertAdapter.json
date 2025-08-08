@@ -53,7 +53,11 @@
 						}
 					}
 				}
-			]
+			],
+			{
+				"from": { "type": "json" },
+				"to": { "mode": "json" }
+			}
 		]
 	},
 	"add": {
