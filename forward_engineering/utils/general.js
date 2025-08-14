@@ -166,10 +166,15 @@ module.exports = _ => {
 		return name.replace(/'/g, "''");
 	};
 
+	const skipSqlCommentsPattern = /^\s*(EXEC(UTE)?\b|.*\bMS_DESCRIPTION\b)/i;
+
 	const buildScript = statements => {
-		const formattedScripts = statements
-			.filter(Boolean)
-			.map(script => sqlFormatter.format(script, { indent: '    ' }).replace(/\{ \{ (.+?) } }/g, '{{$1}}'));
+		const formattedScripts = statements.filter(Boolean).map(script => {
+			if (skipSqlCommentsPattern.test(script)) {
+				return script;
+			}
+			return sqlFormatter.format(script, { indent: '    ' }).replace(/\{ \{ (.+?) } }/g, '{{$1}}');
+		});
 
 		return formattedScripts.join('\n\n') + '\n\n';
 	};
