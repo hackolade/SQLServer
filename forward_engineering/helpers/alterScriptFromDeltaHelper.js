@@ -378,7 +378,6 @@ module.exports = _ => {
 			'addColumnScriptsDtos',
 			'modifyCollectionScriptsDtos',
 			'modifyColumnScriptDtos',
-			'deleteColumnScriptsDtos',
 			'createViewsScriptsDtos',
 			'modifiedViewsScriptsDtos',
 			'addSchemasDropCommentsScriptsDtos',
