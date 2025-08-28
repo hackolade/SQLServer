@@ -121,11 +121,14 @@ module.exports = app => {
 	};
 
 	const getKeys = (keys, jsonSchema) => {
+		const newProperties = getSchemaNewProperties(jsonSchema);
+		const properties = { ...newProperties, ...jsonSchema.properties };
+
 		return keys.map(key => {
 			return {
-				name: findName(key.keyId, jsonSchema.properties),
+				name: findName(key.keyId, properties),
 				order: key.type === 'descending' ? 'DESC' : 'ASC',
-				isActivated: checkIfActivated(key.keyId, jsonSchema.properties),
+				isActivated: checkIfActivated(key.keyId, properties),
 			};
 		});
 	};
@@ -244,6 +247,26 @@ module.exports = app => {
 		const uniqueKeyConstraints = getUniqueKeyConstraints({ columnDefinition });
 
 		return [primaryKeyConstraint, ...uniqueKeyConstraints].filter(Boolean);
+	};
+
+	/**
+	 * @param {JsonSchema} jsonSchema
+	 * @returns {JsonSchema}
+	 */
+	const getSchemaNewProperties = jsonSchema => {
+		if (!Array.isArray(jsonSchema.compMod?.newProperties)) {
+			return {};
+		}
+
+		return jsonSchema.compMod.newProperties.reduce((properties, property) => {
+			return {
+				...properties,
+				[property.code || property.name]: {
+					...property,
+					GUID: property.id,
+				},
+			};
+		}, {});
 	};
 
 	return {
