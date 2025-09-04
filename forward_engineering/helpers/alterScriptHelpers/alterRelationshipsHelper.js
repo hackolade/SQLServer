@@ -7,7 +7,7 @@ const { AlterScriptDto } = require('./types/AlterScriptDto');
  * @return string
  * */
 const getRelationshipName = relationship => {
-	return relationship.role.name;
+	return relationship.role.code || relationship.role.name;
 };
 
 /**
