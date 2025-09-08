@@ -7,7 +7,7 @@ const { AlterScriptDto } = require('./types/AlterScriptDto');
  * @return string
  * */
 const getRelationshipName = relationship => {
-	return relationship.role.name;
+	return relationship.role.code || relationship.role.name;
 };
 
 /**
@@ -31,7 +31,7 @@ const getFullChildTableName = _ => relationship => {
 const getAddSingleForeignKeyStatementDto = (ddlProvider, _) => relationship => {
 	const compMod = relationship.role.compMod;
 
-	const relationshipName = compMod.name?.new || getRelationshipName(relationship) || '';
+	const relationshipName = compMod.code?.new || compMod.name?.new || getRelationshipName(relationship) || '';
 	const schemaName = compMod.parent.bucket.name;
 
 	return ddlProvider.createForeignKey(
@@ -98,7 +98,7 @@ const getDeleteSingleForeignKeyStatementDto = (ddlProvider, _) => relationship =
 
 	const ddlChildEntityName = getFullChildTableName(_)(relationship);
 
-	const relationshipName = compMod.name?.old || getRelationshipName(relationship) || '';
+	const relationshipName = compMod.code?.old || compMod.name?.old || getRelationshipName(relationship) || '';
 	const ddlRelationshipName = wrapInBrackets(relationshipName);
 	const statement = ddlProvider.dropForeignKey(ddlChildEntityName, ddlRelationshipName);
 
@@ -120,7 +120,7 @@ const canRelationshipBeDeleted = relationship => {
 		return false;
 	}
 	return [
-		compMod.name?.old || getRelationshipName(relationship),
+		compMod.code?.old || compMod.name?.old || getRelationshipName(relationship),
 		compMod.child?.bucket,
 		compMod.child?.collection,
 	].every(property => Boolean(property));
