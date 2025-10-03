@@ -148,5 +148,20 @@
 	"FE_LEVEL_SELECTOR_ENTITY": "Table",
 	"FE_LEVEL_SELECTOR_CONTAINER": "Schema",
 	"FE_LEVEL_SELECTOR_MODEL": "Model",
-	"MODAL_WINDOW___ANOTHER_ATTRIBUTE_HAS_PRIMARY_KEY_CONSTRAINT_MESSAGE": "This attribute must have a UNIQUE constraint to be the parent in a Foreign Key relationship"
+	"MODAL_WINDOW___ANOTHER_ATTRIBUTE_HAS_PRIMARY_KEY_CONSTRAINT_MESSAGE": "This attribute must have a UNIQUE constraint to be the parent in a Foreign Key relationship",
+
+	"MAIN_MENU___ATTRIBUTES": "Column in Table Boxes",
+	"MAIN_MENU___DESCRIPTIONS": "Description in Table Boxes",
+	"MAIN_MENU___HIDE_ALL_ATTRIBUTES": "Empty Table Boxes",
+	"MAIN_MENU___REQUIRED_ATTRIBUTES": "Required Columns",
+	"MAIN_MENU___NULLABLE_ATTRIBUTES": "Nullable Columns",
+	"TOOLBAR___ATTRIBUTES": "Column in table boxes",
+	"TOOLBAR___DESCRIPTIONS": "Description in table boxes",
+	"TOOLBAR___HIDE_ALL_ATTRIBUTES": "Empty table boxes",
+	"TOOLBAR___REQUIRED_ATTRIBUTES": "Required columns",
+	"TOOLBAR___NULLABLE_ATTRIBUTES": "Nullable columns",
+	"MODAL_WINDOW___OPTIONS_DISPLAY_ERD_V_ENTITY_BOX_CONTENT": "Display of table box content",
+	"MODAL_WINDOW___OPTIONS_DISPLAY_ERD_V_FIELDS": "Columns",
+	"MODAL_WINDOW___OPTIONS_DISPLAY_REQUIRED_ATTRIBUTES": "Required columns",
+	"MODAL_WINDOW___OPTIONS_DISPLAY_NULLABLE_ATTRIBUTES": "Nullable columns"
 }
