@@ -5,100 +5,117 @@ const { hckFetch } = require('@hackolade/fetch');
 const QUERY_REQUEST_TIMEOUT = 60000;
 
 async function getConnectionClient({ connectionInfo, logger }) {
-	const hostName = getHostName(connectionInfo.host);
-	const userName =
-		isEmail(connectionInfo.userName) && hostName
-			? `${connectionInfo.userName}@${hostName}`
-			: connectionInfo.userName;
+	const userName = getUserName({ connectionInfo });
 	const tenantId = connectionInfo.connectionTenantId || connectionInfo.tenantId || 'common';
 	const clientId = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
 	const sslOptions = getSslConfig({ connectionInfo });
 	const timeout = Number(connectionInfo.queryRequestTimeout) || QUERY_REQUEST_TIMEOUT;
 
-	if (connectionInfo.authMethod === 'Username / Password') {
-		return await sql.connect({
-			user: userName,
-			password: connectionInfo.userPassword,
-			server: connectionInfo.host,
-			port: +connectionInfo.port,
-			database: connectionInfo.databaseName,
-			options: {
-				enableArithAbort: true,
-				encrypt:
-					connectionInfo.encryptConnection === undefined ? true : Boolean(connectionInfo.encryptConnection),
-				...sslOptions,
-			},
-			connectTimeout: timeout,
-			requestTimeout: timeout,
-		});
-	} else if (connectionInfo.authMethod === 'Username / Password (Windows)') {
-		return await sql.connect({
-			user: userName,
-			password: connectionInfo.userPassword,
-			server: connectionInfo.host,
-			port: +connectionInfo.port,
-			database: connectionInfo.databaseName,
-			domain: connectionInfo.userDomain,
-			options: {
-				...sslOptions,
-				encrypt:
-					connectionInfo.encryptWindowsConnection === undefined
-						? false
-						: Boolean(connectionInfo.encryptWindowsConnection),
-				enableArithAbort: true,
-			},
-			connectTimeout: timeout,
-			requestTimeout: timeout,
-		});
-	} else if (connectionInfo.authMethod === 'Azure Active Directory (MFA)') {
-		const redirectUri = 'http://localhost:8080';
-		const token = await getMFAToken({ connectionInfo, tenantId, clientId, redirectUri, logger });
-
-		return await sql.connect({
-			server: connectionInfo.host,
-			port: +connectionInfo.port,
-			database: connectionInfo.databaseName,
-			options: {
-				...sslOptions,
-				encrypt: true,
-				enableArithAbort: true,
-			},
-			authentication: {
-				type: 'azure-active-directory-access-token',
-				options: {
-					token,
-				},
-			},
-			connectTimeout: QUERY_REQUEST_TIMEOUT,
-			requestTimeout: QUERY_REQUEST_TIMEOUT,
-		});
-	} else if (connectionInfo.authMethod === 'Azure Active Directory (Username / Password)') {
-		return await sql.connect({
-			user: userName,
-			password: connectionInfo.userPassword,
-			server: connectionInfo.host,
-			port: +connectionInfo.port,
-			database: connectionInfo.databaseName,
-			options: {
-				...sslOptions,
-				encrypt: true,
-				enableArithAbort: true,
-			},
-			authentication: {
-				type: 'azure-active-directory-password',
-				options: {
-					userName: connectionInfo.userName,
-					password: connectionInfo.userPassword,
-					tenantId,
-					clientId,
-				},
-			},
-			connectTimeout: timeout,
-			requestTimeout: timeout,
-		});
+	switch (connectionInfo.authMethod) {
+		case 'Username / Password':
+			return await connectWithBasicAuth({ connectionInfo, userName, sslOptions, timeout });
+		case 'Username / Password (Windows)':
+			return await connectWithWindowsAuth({ connectionInfo, userName, sslOptions, timeout });
+		case 'Azure Active Directory (MFA)':
+			return await connectWithAzureMFA({ connectionInfo, sslOptions, tenantId, clientId, logger });
+		case 'Azure Active Directory (Username / Password)':
+			return await connectWithAzurePassword({
+				connectionInfo,
+				userName,
+				sslOptions,
+				timeout,
+				tenantId,
+				clientId,
+			});
+		default:
+			return await sql.connect(connectionInfo.connectionString);
 	}
+}
 
-	return await sql.connect(connectionInfo.connectionString);
+function getBaseConnectionConfig({ connectionInfo, timeout }) {
+	return {
+		server: connectionInfo.host,
+		port: parseInt(connectionInfo.port, 10),
+		database: connectionInfo.databaseName,
+		connectTimeout: timeout,
+		requestTimeout: timeout,
+	};
+}
+
+async function connectWithBasicAuth({ connectionInfo, userName, sslOptions, timeout }) {
+	const encrypt = connectionInfo.encryptConnection === undefined ? true : Boolean(connectionInfo.encryptConnection);
+
+	return await sql.connect({
+		...getBaseConnectionConfig({ connectionInfo, timeout }),
+		user: userName,
+		password: connectionInfo.userPassword,
+		options: {
+			enableArithAbort: true,
+			encrypt,
+			...sslOptions,
+		},
+	});
+}
+
+async function connectWithWindowsAuth({ connectionInfo, userName, sslOptions, timeout }) {
+	const encrypt =
+		connectionInfo.encryptWindowsConnection === undefined
+			? false
+			: Boolean(connectionInfo.encryptWindowsConnection);
+
+	return await sql.connect({
+		...getBaseConnectionConfig({ connectionInfo, timeout }),
+		user: userName,
+		password: connectionInfo.userPassword,
+		domain: connectionInfo.userDomain,
+		options: {
+			...sslOptions,
+			encrypt,
+			enableArithAbort: true,
+		},
+	});
+}
+
+async function connectWithAzureMFA({ connectionInfo, sslOptions, tenantId, clientId, logger }) {
+	const redirectUri = 'http://localhost:8080';
+	const token = await getMFAToken({ connectionInfo, tenantId, clientId, redirectUri, logger });
+
+	return await sql.connect({
+		...getBaseConnectionConfig({ connectionInfo, timeout: QUERY_REQUEST_TIMEOUT }),
+		options: {
+			...sslOptions,
+			encrypt: true,
+			enableArithAbort: true,
+		},
+		authentication: {
+			type: 'azure-active-directory-access-token',
+			options: {
+				token,
+			},
+		},
+	});
+}
+
+async function connectWithAzurePassword({ connectionInfo, userName, sslOptions, timeout, tenantId, clientId }) {
+	return await sql.connect({
+		...getBaseConnectionConfig({ connectionInfo, timeout }),
+		user: userName,
+		password: connectionInfo.userPassword,
+		options: {
+			...sslOptions,
+			encrypt: true,
+			enableArithAbort: true,
+		},
+		authentication: {
+			type: 'azure-active-directory-password',
+			options: {
+				userName: connectionInfo.userName,
+				password: connectionInfo.userPassword,
+				tenantId,
+				clientId,
+			},
+		},
+	});
 }
 
 function getSslConfig({ connectionInfo }) {
@@ -163,9 +180,6 @@ async function getMFAToken({ connectionInfo, tenantId, redirectUri, clientId, lo
 	}
 }
 
-/**
- * @param {Response} response
- */
 async function parseResponse(response) {
 	if (response.status !== 200) {
 		const errorMessage = await response.text();
@@ -173,6 +187,13 @@ async function parseResponse(response) {
 	}
 
 	return response.json();
+}
+
+function getUserName({ connectionInfo }) {
+	const hostName = getHostName(connectionInfo.host);
+	return isEmail(connectionInfo.userName) && hostName
+		? `${connectionInfo.userName}@${hostName}`
+		: connectionInfo.userName;
 }
 
 function getHostName(url) {
