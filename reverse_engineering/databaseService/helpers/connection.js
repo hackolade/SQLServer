@@ -200,7 +200,11 @@ function getHostName(url) {
 	return (url || '').split('.')[0];
 }
 function isEmail(name) {
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name || '');
+	if (!name || name.length > 320) {
+		return false;
+	}
+
+	return /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(name);
 }
 
 module.exports = {
