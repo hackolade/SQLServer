@@ -130,7 +130,7 @@
 					},
 					{
 						"value": "Azure Active Directory (MFA)",
-						"label": "Azure Active Directory (MFA)"
+						"label": "Azure Entra ID (MFA)"
 					}
 				]
 			},
@@ -209,17 +209,7 @@
 				"inputTooltip": "Specify the Tenant ID from the Overview screen of your Azure AD tenant",
 				"dependency": {
 					"key": "authMethod",
-					"value": ["Azure Active Directory (Username / Password)", "Azure Active Directory (MFA)"]
-				}
-			},
-			{
-				"inputLabel": "User Name",
-				"inputKeyword": "loginHint",
-				"inputType": "text",
-				"inputPlaceholder": "User Name",
-				"dependency": {
-					"key": "authMethod",
-					"value": ["Azure Active Directory (MFA)"]
+					"value": ["Azure Active Directory (Username / Password)"]
 				}
 			}
 		]
