@@ -53,6 +53,7 @@
 			{
 				"inputLabel": "Host",
 				"inputKeyword": "host",
+				"inputPlaceholder": "Host",
 				"description": "Specify host IP address or DNS of instance. Or use {server}\\{instance} to connect to a named instance.",
 				"inputType": "text",
 				"dependency": {
