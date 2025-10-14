@@ -33,7 +33,7 @@ const parseSqlServerUrl = ({ url = '' }) => {
 	return {
 		host,
 		port: port ? Number(port) : null,
-		databaseName: params.databaseName,
+		databaseName: params.databaseName || params.database,
 		userName: params.user,
 		userPassword: params.password,
 	};
