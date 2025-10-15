@@ -126,12 +126,12 @@
 						"label": "Windows"
 					},
 					{
-						"value": "Azure Active Directory (Username / Password)",
-						"label": "Azure Active Directory (Username / Password)"
+						"value": "Azure Active Directory (MFA)",
+						"label": "Microsoft Entra ID via authorization code flow (PCKE)"
 					},
 					{
-						"value": "Azure Active Directory (MFA)",
-						"label": "Azure Entra ID (MFA)"
+						"value": "Azure Active Directory (Username / Password)",
+						"label": "Microsoft Entra ID via username/password (ROPC - legacy)"
 					}
 				]
 			},
