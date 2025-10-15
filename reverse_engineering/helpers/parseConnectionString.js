@@ -4,13 +4,21 @@ const { URL } = require('url');
 const mssqlPrefix = 'mssql://';
 const sqlserverPrefix = 'jdbc:sqlserver://';
 
+// Remove curly brackets from database name
+const removeBrackets = dbName => {
+	if (!dbName) {
+		return dbName;
+	}
+	return dbName.replace(/(^\{|\}$)/g, '');
+};
+
 // example: mssql://username:password@host:1433/DatabaseName
 const parseMssqlUrl = ({ url = '' }) => {
 	const parsed = new URL(url);
 	return {
 		host: parsed.hostname,
 		port: parsed.port ? Number(parsed.port) : null,
-		databaseName: parsed.pathname.slice(1),
+		databaseName: removeBrackets(parsed.pathname.slice(1)),
 		userName: parsed.username,
 		userPassword: parsed.password,
 	};
@@ -33,7 +41,7 @@ const parseSqlServerUrl = ({ url = '' }) => {
 	return {
 		host,
 		port: port ? Number(port) : null,
-		databaseName: params.databaseName || params.database,
+		databaseName: removeBrackets(params.databaseName || params.database),
 		userName: params.user,
 		userPassword: params.password,
 	};
@@ -50,7 +58,7 @@ const parseBasicString = ({ string = '' }) => {
 	return {
 		host: host,
 		port: host.includes('\\') ? null : parsed.port,
-		databaseName: parsed.database,
+		databaseName: removeBrackets(parsed.database),
 		userName: parsed.user,
 		userPassword: parsed.password,
 	};
