@@ -20,12 +20,13 @@ module.exports = (app, options) => {
 	const { getModifyPkConstraintsScriptDtos } = require('./entityHelpers/primaryKeyHelper');
 	const { getModifyNonNullColumnsScriptDtos } = require('./columnHelpers/notNullConstraintsHelper');
 	const { getModifyUniqueConstraintsScriptDtos } = require('./entityHelpers/uniqueConstraintHelper');
+	const { getRelationshipName } = require('./alterRelationshipsHelper');
 
 	/**
 	 * @param {Collection} collection
 	 * @return Array<AlterScriptDto>
 	 * */
-	const getAddCollectionScriptDto = collection => {
+	const getAddCollectionScriptDto = (collection, inlineDeltaRelationships) => {
 		//done but need clean up
 		const schemaName = collection.compMod.keyspaceName;
 		const schemaData = { schemaName };
@@ -45,11 +46,33 @@ module.exports = (app, options) => {
 		const checkConstraints = (jsonSchema.chkConstr || []).map(check =>
 			ddlProvider.createCheckConstraint(ddlProvider.hydrateCheckConstraint(check)),
 		);
+
+		const foreignKeyConstraints = inlineDeltaRelationships
+			.filter(relationship => relationship.role.childCollection === collection.role.id)
+			.map(relationship => {
+				const compMod = relationship.role.compMod;
+				const relationshipName =
+					compMod.code?.new || compMod.name?.new || getRelationshipName(relationship) || '';
+				return ddlProvider.createForeignKeyConstraint({
+					name: relationshipName,
+					foreignKey: compMod.child.collection.fkFields,
+					primaryKey: compMod.parent.collection.fkFields,
+					customProperties: compMod.customProperties?.new,
+					foreignTable: compMod.child.collection.name,
+					foreignSchemaName: compMod.child.bucket.name,
+					foreignTableActivated: compMod.child.collection.isActivated,
+					primaryTable: compMod.parent.collection.name,
+					primarySchemaName: compMod.parent.bucket.name,
+					primaryTableActivated: compMod.parent.collection.isActivated,
+					isActivated: Boolean(relationship.role?.compMod?.isActivated?.new),
+				});
+			});
+
 		const tableData = {
 			name: tableName,
 			columns: columnDefinitions.map(ddlProvider.convertColumnDefinition),
 			checkConstraints: checkConstraints,
-			foreignKeyConstraints: [],
+			foreignKeyConstraints,
 			schemaData,
 			columnDefinitions,
 		};

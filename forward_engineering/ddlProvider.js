@@ -299,7 +299,7 @@ module.exports = (baseProvider, options, app) => {
 
 			return {
 				statement: assignTemplates(templates.createForeignKeyConstraint, {
-					primaryTable: getTableName(primaryTable, primarySchemaName || schemaData.schemaName, true),
+					primaryTable: getTableName(primaryTable, primarySchemaName || schemaData?.schemaName, true),
 					name: wrapInBrackets(relationshipName),
 					foreignKey: isActivated ? foreignKeysToString(foreignKey) : foreignActiveKeysToString(foreignKey),
 					primaryKey: isActivated ? foreignKeysToString(primaryKey) : foreignActiveKeysToString(primaryKey),
