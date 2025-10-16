@@ -52,10 +52,61 @@ module.exports = _ => {
 		return { addContainersScriptsDtos, deleteContainersScriptsDtos };
 	};
 
+	const sortCollectionsByRelationships = (collections, relationships) => {
+		const collectionToChildren = new Map(); // Map of collection IDs to their children
+		const collectionParentCount = new Map(); // Track how many parents each collection has
+
+		// Initialize maps
+		for (const collection of collections) {
+			collectionToChildren.set(collection.role.id, []);
+			collectionParentCount.set(collection.role.id, 0);
+		}
+
+		for (const relationship of relationships) {
+			const parent = relationship.role.parentCollection;
+			const child = relationship.role.childCollection;
+			if (collectionToChildren.has(parent)) {
+				collectionToChildren.get(parent).push(child);
+			}
+			collectionParentCount.set(child, (collectionParentCount.get(child) || 0) + 1);
+		}
+
+		// Find collections with no parents
+		const queue = collections
+			.filter(collection => collectionParentCount.get(collection.role.id) === 0)
+			.map(collection => collection.role.id);
+
+		const sortedIds = [];
+
+		// Sort collections
+		while (queue.length > 0) {
+			const current = queue.shift();
+			sortedIds.push(current);
+
+			for (const child of collectionToChildren.get(current) || []) {
+				collectionParentCount.set(child, collectionParentCount.get(child) - 1);
+				if (collectionParentCount.get(child) <= 0) {
+					queue.push(child);
+				}
+			}
+		}
+
+		// Add any unvisited collection
+		for (const collection of collections) {
+			if (!sortedIds.includes(collection.role.id)) {
+				sortedIds.unshift(collection.role.id);
+			}
+		}
+
+		// Map back to collection objects in sorted order
+		const idToCollection = Object.fromEntries(collections.map(c => [c.role.id, c]));
+		return sortedIds.map(id => idToCollection[id]);
+	};
+
 	/**
 	 * @return {{ [key: string]: Array<AlterScriptDto>}}}
 	 * */
-	const getAlterCollectionsScriptsDtos = (collection, app, options) => {
+	const getAlterCollectionsScriptsDtos = (collection, app, options, inlineDeltaRelationships = []) => {
 		const {
 			getAddCollectionScriptDto,
 			getDeleteCollectionScriptDto,
@@ -80,9 +131,10 @@ module.exports = _ => {
 			.filter(Boolean)
 			.map(item => Object.values(item.properties)[0]);
 
-		const createCollectionsScriptsDtos = createScriptsData
-			.filter(collection => collection.compMod?.created)
-			.flatMap(getAddCollectionScriptDto);
+		const createCollectionsScriptsDtos = sortCollectionsByRelationships(
+			createScriptsData.filter(collection => collection.compMod?.created),
+			inlineDeltaRelationships,
+		).flatMap(collection => getAddCollectionScriptDto(collection, inlineDeltaRelationships));
 		const deleteCollectionScriptsDtos = deleteScriptsData
 			.filter(collection => collection.compMod?.deleted)
 			.flatMap(getDeleteCollectionScriptDto);
@@ -175,7 +227,7 @@ module.exports = _ => {
 		return { deleteUdtScriptsDtos, createUdtScriptsDtos };
 	};
 
-	const getAlterRelationshipsScriptDtos = (collection, app) => {
+	const getAlterRelationshipsScriptDtos = (collection, app, ignoreRelationshipIDs = []) => {
 		const _ = app.require('lodash');
 		const ddlProvider = require('../ddlProvider')(null, null, app);
 		const {
@@ -188,17 +240,26 @@ module.exports = _ => {
 			.concat(collection.properties?.relationships?.properties?.added?.items)
 			.filter(Boolean)
 			.map(item => Object.values(item.properties)[0])
-			.filter(relationship => relationship?.role?.compMod?.created);
+			.filter(
+				relationship =>
+					relationship?.role?.compMod?.created && !ignoreRelationshipIDs.includes(relationship?.role?.id),
+			);
 		const deletedRelationships = []
 			.concat(collection.properties?.relationships?.properties?.deleted?.items)
 			.filter(Boolean)
 			.map(item => Object.values(item.properties)[0])
-			.filter(relationship => relationship?.role?.compMod?.deleted);
+			.filter(
+				relationship =>
+					relationship?.role?.compMod?.deleted && !ignoreRelationshipIDs.includes(relationship?.role?.id),
+			);
 		const modifiedRelationships = []
 			.concat(collection.properties?.relationships?.properties?.modified?.items)
 			.filter(Boolean)
 			.map(item => Object.values(item.properties)[0])
-			.filter(relationship => relationship?.role?.compMod?.modified);
+			.filter(
+				relationship =>
+					relationship?.role?.compMod?.modified && !ignoreRelationshipIDs.includes(relationship?.role?.id),
+			);
 
 		const deleteFkScriptDtos = getDeleteForeignKeyScriptDtos(ddlProvider, _)(deletedRelationships);
 		const addFkScriptDtos = getAddForeignKeyScriptDtos(ddlProvider, _)(addedRelationships);
@@ -349,19 +410,39 @@ module.exports = _ => {
 		return assertNoEmptyStatements(scripts);
 	};
 
+	const getInlineRelationships = ({ collection, options }) => {
+		if (options?.scriptGenerationOptions?.feActiveOptions?.foreignKeys !== 'inline') {
+			return [];
+		}
+
+		const addedCollectionIDs = []
+			.concat(collection.properties?.entities?.properties?.added?.items)
+			.filter(item => item && Object.values(item.properties)?.[0]?.compMod?.created)
+			.map(item => Object.values(item.properties)[0].role.id);
+
+		const addedRelationships = []
+			.concat(collection.properties?.relationships?.properties?.added?.items)
+			.map(item => item && Object.values(item.properties)[0])
+			.filter(r => r?.role?.compMod?.created && addedCollectionIDs.includes(r?.role?.childCollection));
+
+		return addedRelationships;
+	};
+
 	/**
 	 * @return Array<AlterScriptDto>
 	 * */
 	const getAlterScriptDtos = (collection, app, options) => {
+		const inlineDeltaRelationships = getInlineRelationships({ collection, options });
+		const ignoreRelationshipIDs = inlineDeltaRelationships.map(relationship => relationship.role.id);
 		const script = {
-			...getAlterCollectionsScriptsDtos(collection, app, options),
+			...getAlterCollectionsScriptsDtos(collection, app, options, inlineDeltaRelationships),
 			...getAlterContainersScriptsDtos(collection, app, options),
 			...getAlterViewScriptsDtos(collection, app, options),
 			...getAlterModelDefinitionsScriptsDtos(collection, app, options),
 			...getContainersCommentsAlterScriptsDtos(collection, app, options),
 			...getCollectionsCommentsAlterScriptsDtos(collection, app, options),
 			...getViewsCommentsAlterScriptsDtos(collection, app, options),
-			...getAlterRelationshipsScriptDtos(collection, app),
+			...getAlterRelationshipsScriptDtos(collection, app, ignoreRelationshipIDs),
 		};
 
 		return [
