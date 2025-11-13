@@ -119,7 +119,11 @@
 						}
 					}
 				}
-			]
+			],
+			{
+				"from": { "childType": "uuid" },
+				"to": { "mode": "uniqueidentifier" }
+			}
 		]
 	}
 }

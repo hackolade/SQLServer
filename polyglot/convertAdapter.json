@@ -57,6 +57,10 @@
 			{
 				"from": { "type": "json" },
 				"to": { "mode": "json" }
+			},
+			{
+				"from": { "childType": "uniqueidentifier" },
+				"to": { "mode": "uuid" }
 			}
 		]
 	},
