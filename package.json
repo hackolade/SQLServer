@@ -1,106 +1,106 @@
 {
-	"name": "SQLServer",
-	"version": "0.2.33",
-	"author": "hackolade",
-	"engines": {
-		"hackolade": "7.7.10",
-		"hackoladePlugin": "1.2.0"
-	},
-	"contributes": {
-		"target": {
-			"applicationTarget": "MSSQLServer",
-			"title": "MS SQL Server",
-			"versions": [
-				"2008",
-				"2012",
-				"2014",
-				"2016",
-				"2017",
-				"2019",
-				"2022",
-				"2025"
-			]
-		},
-		"features": {
-			"nestedCollections": false,
-			"disablePatternField": true,
-			"disableMultipleTypes": true,
-			"enableForwardEngineering": {
-				"jsonDocument": true,
-				"jsonSchema": true,
-				"excel": true,
-				"plugin": true,
-				"dbt": true
-			},
-			"disableReverseEngineering": false,
-			"disableChoices": true,
-			"enableJsonType": true,
-			"useJsonTypesWithComplexTypes": true,
-			"reverseSchemaIntoOneColumn": true,
-			"disableDenormalization": true,
-			"enableComplexTypesNormalization": true,
-			"generateAssociativeEntitiesForManyToManyRelationships": true,
-			"views": {
-				"enabled": true,
-				"viewLevel": "model",
-				"disablePipelines": true,
-				"includeViews": true
-			},
-			"relationships": {
-				"compositeRelationships": {
-					"allowRelationshipsByProperties": [
-						"primaryKey",
-						"unique",
-						"compositeUniqueKey",
-						"compositePrimaryKey"
-					]
-				}
-			},
-			"FEScriptCommentsSupported": true,
-			"enableFetchSystemEntitiesCheckbox": true,
-			"discoverRelationships": true,
-			"enableKeysMultipleAbrr": true
-		}
-	},
-	"description": "Hackolade plugin for Microsoft SQL Server and Azure SQL Database",
-	"icon_url": "logo.jpg",
-	"disabled": false,
-	"dependencies": {
-		"@hackolade/fetch": "1.3.0",
-		"base64url": "3.0.1",
-		"crypto": "1.0.1",
-		"lodash": "4.17.21",
-		"mssql": "11.0.0",
-		"qs": "6.12.1",
-		"randomstring": "1.2.1",
-		"sql-formatter": "2.3.3"
-	},
-	"lint-staged": {
-		"*.{js,json}": "prettier --write"
-	},
-	"simple-git-hooks": {
-		"pre-commit": "npx lint-staged",
-		"pre-push": "npx eslint ."
-	},
-	"scripts": {
-		"lint": "eslint . --max-warnings=0",
-		"package": "node esbuild.package.js"
-	},
-	"devDependencies": {
-		"@hackolade/hck-esbuild-plugins-pack": "0.0.1",
-		"@typescript-eslint/eslint-plugin": "7.11.0",
-		"@typescript-eslint/parser": "7.11.0",
-		"esbuild": "0.25.10",
-		"esbuild-plugin-clean": "1.0.1",
-		"esbuild-plugin-copy": "2.1.1",
-		"eslint": "8.57.0",
-		"eslint-config-prettier": "9.1.0",
-		"eslint-formatter-teamcity": "^1.0.0",
-		"eslint-plugin-import": "^2.26.0",
-		"eslint-plugin-prettier": "5.1.3",
-		"eslint-plugin-unused-imports": "3.2.0",
-		"lint-staged": "14.0.1",
-		"prettier": "3.2.5",
-		"simple-git-hooks": "2.11.1"
-	}
+    "name": "SQLServer",
+    "version": "0.2.34",
+    "author": "hackolade",
+    "engines": {
+        "hackolade": "7.7.10",
+        "hackoladePlugin": "1.2.0"
+    },
+    "contributes": {
+        "target": {
+            "applicationTarget": "MSSQLServer",
+            "title": "MS SQL Server",
+            "versions": [
+                "2008",
+                "2012",
+                "2014",
+                "2016",
+                "2017",
+                "2019",
+                "2022",
+                "2025"
+            ]
+        },
+        "features": {
+            "nestedCollections": false,
+            "disablePatternField": true,
+            "disableMultipleTypes": true,
+            "enableForwardEngineering": {
+                "jsonDocument": true,
+                "jsonSchema": true,
+                "excel": true,
+                "plugin": true,
+                "dbt": true
+            },
+            "disableReverseEngineering": false,
+            "disableChoices": true,
+            "enableJsonType": true,
+            "useJsonTypesWithComplexTypes": true,
+            "reverseSchemaIntoOneColumn": true,
+            "disableDenormalization": true,
+            "enableComplexTypesNormalization": true,
+            "generateAssociativeEntitiesForManyToManyRelationships": true,
+            "views": {
+                "enabled": true,
+                "viewLevel": "model",
+                "disablePipelines": true,
+                "includeViews": true
+            },
+            "relationships": {
+                "compositeRelationships": {
+                    "allowRelationshipsByProperties": [
+                        "primaryKey",
+                        "unique",
+                        "compositeUniqueKey",
+                        "compositePrimaryKey"
+                    ]
+                }
+            },
+            "FEScriptCommentsSupported": true,
+            "enableFetchSystemEntitiesCheckbox": true,
+            "discoverRelationships": true,
+            "enableKeysMultipleAbrr": true
+        }
+    },
+    "description": "Hackolade plugin for Microsoft SQL Server and Azure SQL Database",
+    "icon_url": "logo.jpg",
+    "disabled": false,
+    "dependencies": {
+        "@hackolade/fetch": "1.3.0",
+        "base64url": "3.0.1",
+        "crypto": "1.0.1",
+        "lodash": "4.17.21",
+        "mssql": "11.0.0",
+        "qs": "6.12.1",
+        "randomstring": "1.2.1",
+        "sql-formatter": "2.3.3"
+    },
+    "lint-staged": {
+        "*.{js,json}": "prettier --write"
+    },
+    "simple-git-hooks": {
+        "pre-commit": "npx lint-staged",
+        "pre-push": "npx eslint ."
+    },
+    "scripts": {
+        "lint": "eslint . --max-warnings=0",
+        "package": "node esbuild.package.js"
+    },
+    "devDependencies": {
+        "@hackolade/hck-esbuild-plugins-pack": "0.0.1",
+        "@typescript-eslint/eslint-plugin": "7.11.0",
+        "@typescript-eslint/parser": "7.11.0",
+        "esbuild": "0.25.10",
+        "esbuild-plugin-clean": "1.0.1",
+        "esbuild-plugin-copy": "2.1.1",
+        "eslint": "8.57.0",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-formatter-teamcity": "^1.0.0",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-plugin-prettier": "5.1.3",
+        "eslint-plugin-unused-imports": "3.2.0",
+        "lint-staged": "14.0.1",
+        "prettier": "3.2.5",
+        "simple-git-hooks": "2.11.1"
+    }
 }
