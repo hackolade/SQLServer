@@ -69,7 +69,7 @@
         "@hackolade/fetch": "1.3.0",
         "base64url": "3.0.1",
         "crypto": "1.0.1",
-        "lodash": "4.17.21",
+        "lodash": "4.17.23",
         "mssql": "11.0.0",
         "qs": "6.14.1",
         "randomstring": "1.2.1",
