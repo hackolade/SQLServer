@@ -461,15 +461,6 @@ const ddlProvider = (baseProvider, options, app) => {
 			return hasType(type);
 		},
 
-		hydrateJsonSchemaColumn(jsonSchema, definitionJsonSchema) {
-			if (!jsonSchema.$ref || _.isEmpty(definitionJsonSchema)) {
-				return jsonSchema;
-			}
-
-			jsonSchema = _.omit(jsonSchema, '$ref');
-			return { ...definitionJsonSchema, ...jsonSchema };
-		},
-
 		hydrateColumn({ columnDefinition, jsonSchema, schemaData, parentJsonSchema }) {
 			let encryption = [];
 
