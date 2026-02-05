@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const { connect } = require('../../reverse_engineering/api');
 const { filterDeactivatedQuery, queryIsDeactivated } = require('./commentIfDeactivated');
 
@@ -11,7 +12,7 @@ const applyToInstance = async (connectionInfo, logger, app) => {
 		if (!client.config.database) {
 			throw new Error('No database specified');
 		}
-		const queries = getQueries(app, connectionInfo.script);
+		const queries = getQueries(connectionInfo.script);
 
 		await async.mapSeries(queries, async query => {
 			const message = `Query: ${query.split('\n').shift().substring(0, 150)}`;
@@ -26,8 +27,7 @@ const applyToInstance = async (connectionInfo, logger, app) => {
 	}
 };
 
-const getQueries = (app, script = '') => {
-	const _ = app.require('lodash');
+const getQueries = (script = '') => {
 	script = filterDeactivatedQuery(script);
 	return script
 		.split('\n\n')

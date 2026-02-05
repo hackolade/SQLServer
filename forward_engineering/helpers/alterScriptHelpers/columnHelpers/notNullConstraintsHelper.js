@@ -1,13 +1,12 @@
-'use strict';
-
+const _ = require('lodash');
 const { AlterScriptDto } = require('../types/AlterScriptDto');
+const { getFullTableName, wrapInBrackets } = require('../../../utils/general');
+const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 
 /**
  * @return {(collection: Collection) => AlterScriptDto[]}
  * */
-const getModifyNonNullColumnsScriptDtos = (_, ddlProvider) => (collection, collectionSchema, schemaName) => {
-	const { getFullTableName, wrapInBrackets } = require('../../../utils/general')(_);
-	const { createColumnDefinitionBySchema } = require('./createColumnDefinition')(_);
+const getModifyNonNullColumnsScriptDtos = ddlProvider => (collection, collectionSchema, schemaName) => {
 	const fullTableName = getFullTableName(collection);
 	const schemaData = { schemaName };
 

@@ -1,11 +1,9 @@
-'use strict';
+const _ = require('lodash');
+const { AlterScriptDto } = require('../types/AlterScriptDto');
+const { checkFieldPropertiesChanged } = require('../common');
+const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 
-module.exports = (app, ddlProvider) => {
-	const _ = app.require('lodash');
-	const { checkFieldPropertiesChanged } = require('../common')(app);
-	const { createColumnDefinitionBySchema } = require('./createColumnDefinition')(_);
-	const { AlterScriptDto } = require('../types/AlterScriptDto');
-
+const alterTypeHelper = ddlProvider => {
 	const getChangeTypeScriptsDto = (collectionProperties, fullName, collectionSchema, schemaName) => {
 		const schemaData = { schemaName };
 
@@ -28,3 +26,5 @@ module.exports = (app, ddlProvider) => {
 		getChangeTypeScriptsDto,
 	};
 };
+
+module.exports = alterTypeHelper;

@@ -1,14 +1,15 @@
-module.exports = (app, options) => {
-	const _ = app.require('lodash');
-	const { createColumnDefinitionBySchema } = require('./columnHelpers/createColumnDefinition')(_);
+const _ = require('lodash');
+const { AlterScriptDto } = require('./types/AlterScriptDto');
+const { createColumnDefinitionBySchema } = require('./columnHelpers/createColumnDefinition');
+
+const alterUdtHelper = (app, options) => {
 	const ddlProvider = require('../../ddlProvider')(null, options, app);
-	const { AlterScriptDto } = require('./types/AlterScriptDto');
 
 	const DEFAULT_KEY_SPACE = { 'Default_Keyspace': [] };
 
 	const getSchemaNames = udt => {
 		const schemaNames = udt.compMod?.bucketsWithCurrentDefinition;
-		return !_.isEmpty(schemaNames) ? schemaNames : DEFAULT_KEY_SPACE;
+		return _.isEmpty(schemaNames) ? DEFAULT_KEY_SPACE : schemaNames;
 	};
 
 	const getCreateUdtScriptDto = jsonSchema => {
@@ -43,3 +44,5 @@ module.exports = (app, options) => {
 		getDeleteUdtScriptDto,
 	};
 };
+
+module.exports = alterUdtHelper;

@@ -1,10 +1,8 @@
-'use strict';
+const _ = require('lodash');
+const { checkFieldPropertiesChanged } = require('../common');
+const { AlterScriptDto } = require('../types/AlterScriptDto');
 
-module.exports = (app, ddlProvider) => {
-	const _ = app.require('lodash');
-	const { checkFieldPropertiesChanged } = require('../common')(app);
-	const { AlterScriptDto } = require('../types/AlterScriptDto');
-
+const renameColumnHelpers = ddlProvider => {
 	const getRenameColumnScriptsDto = (collectionProperties, fullName) => {
 		return _.values(collectionProperties)
 			.filter(jsonSchema => checkFieldPropertiesChanged(jsonSchema.compMod, ['name']))
@@ -23,3 +21,5 @@ module.exports = (app, ddlProvider) => {
 		getRenameColumnScriptsDto,
 	};
 };
+
+module.exports = renameColumnHelpers;

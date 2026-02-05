@@ -1,47 +1,62 @@
+const _ = require('lodash');
 const defaultTypes = require('./configs/defaultTypes');
 const types = require('./configs/types');
 const templates = require('./configs/templates');
 const { commentIfDeactivated } = require('./helpers/commentIfDeactivated');
 const { joinActivatedAndDeactivatedStatements } = require('./utils/joinActivatedAndDeactivatedStatements');
+const { assignTemplates } = require('./utils/assignTemplates');
+const {
+	wrapInBrackets,
+	escapeSpecialCharacters,
+	wrapInBracketsIfNecessary,
+	checkAllKeysDeactivated,
+	divideIntoActivatedAndDeactivated,
+	getEntityName,
+} = require('./utils/general');
+const {
+	decorateType,
+	getIdentity,
+	getEncryptedWith,
+	getColumnsComments,
+	canHaveIdentity,
+} = require('./helpers/columnDefinitionHelper');
+const {
+	createIndex,
+	hydrateIndex,
+	getMemoryOptimizedIndexes,
+	createMemoryOptimizedIndex,
+	hydrateTableIndex,
+	createTableIndex,
+} = require('./helpers/indexHelper');
+const {
+	getTableName,
+	getTableOptions,
+	hasType,
+	foreignKeysToString,
+	checkIndexActivated,
+	getDefaultValue,
+	getTempTableTime,
+	foreignActiveKeysToString,
+	additionalPropertiesForForeignKey,
+	getFKConstraintName,
+} = require('./helpers/general');
+const keyHelper = require('./helpers/keyHelper');
+const { getTerminator } = require('./helpers/optionsHelper');
+const {
+	createPKConstraint,
+	createUKConstraint,
+	createDefaultConstraint,
+	generateConstraintsString,
+} = require('./helpers/constraintsHelper');
+const {
+	wrapIfNotExistSchema,
+	wrapIfNotExistDatabase,
+	wrapIfNotExistTable,
+	wrapIfNotExistView,
+} = require('./helpers/ifNotExistStatementHelper');
+const { getPartitionedTables, getCreateViewData } = require('./helpers/viewHelper');
 
-module.exports = (baseProvider, options, app) => {
-	const _ = app.require('lodash');
-	const { assignTemplates } = app.require('@hackolade/ddl-fe-utils');
-	const { checkAllKeysDeactivated, divideIntoActivatedAndDeactivated, getEntityName } =
-		app.require('@hackolade/ddl-fe-utils').general;
-	const { wrapInBrackets } = require('./utils/general')(_);
-
-	const { decorateType, getIdentity, getEncryptedWith, getColumnsComments, canHaveIdentity } =
-		require('./helpers/columnDefinitionHelper')(app);
-	const {
-		createIndex,
-		hydrateIndex,
-		getMemoryOptimizedIndexes,
-		createMemoryOptimizedIndex,
-		hydrateTableIndex,
-		createTableIndex,
-	} = require('./helpers/indexHelper')(app);
-	const {
-		getTableName,
-		getTableOptions,
-		hasType,
-		foreignKeysToString,
-		checkIndexActivated,
-		getDefaultValue,
-		getTempTableTime,
-		foreignActiveKeysToString,
-		additionalPropertiesForForeignKey,
-		getFKConstraintName,
-	} = require('./helpers/general')(app);
-	const keyHelper = require('./helpers/keyHelper')(app);
-	const { getTerminator } = require('./helpers/optionsHelper');
-	const { createPKConstraint, createUKConstraint, createDefaultConstraint, generateConstraintsString } =
-		require('./helpers/constraintsHelper')(app);
-	const { wrapIfNotExistSchema, wrapIfNotExistDatabase, wrapIfNotExistTable, wrapIfNotExistView } =
-		require('./helpers/ifNotExistStatementHelper')(app);
-	const { getPartitionedTables, getCreateViewData } = require('./helpers/viewHelper')(app);
-	const { getFullTableName, escapeSpecialCharacters, wrapInBracketsIfNecessary } = require('./utils/general')(_);
-
+const ddlProvider = (baseProvider, options, app) => {
 	const terminator = getTerminator(options);
 
 	return {
@@ -206,9 +221,9 @@ module.exports = (baseProvider, options, app) => {
 				? ` MASKED WITH (FUNCTION='${columnDefinition.maskedWithFunction}')`
 				: '';
 			const identityContainer = columnDefinition.identity && { identity: getIdentity(columnDefinition.identity) };
-			const encryptedWith = !_.isEmpty(columnDefinition.encryption)
-				? getEncryptedWith(columnDefinition.encryption[0])
-				: '';
+			const encryptedWith = _.isEmpty(columnDefinition.encryption)
+				? ''
+				: getEncryptedWith(columnDefinition.encryption[0]);
 			const unique = columnDefinition.unique
 				? ' ' + createUKConstraint(templates, terminator, true)(columnDefinition.uniqueKeyOptions).statement
 				: '';
@@ -250,7 +265,7 @@ module.exports = (baseProvider, options, app) => {
 		createIndex(tableName, index, dbData, isParentActivated = true) {
 			const isActivated = checkIndexActivated(index);
 			if (!isParentActivated) {
-				return createTableIndex(terminator, tableName, index, isActivated && isParentActivated);
+				return createTableIndex(terminator, tableName, index, isActivated);
 			}
 			return createTableIndex(terminator, tableName, index, isActivated && isParentActivated);
 		},
@@ -485,7 +500,8 @@ module.exports = (baseProvider, options, app) => {
 			const isTempTableEndTimeColumnHidden =
 				_.get(parentJsonSchema, 'periodForSystemTime[0].startTime[0].type', '') === 'hidden';
 
-			return Object.assign({}, columnDefinition, {
+			return {
+				...columnDefinition,
 				defaultConstraint: {
 					name: jsonSchema.defaultConstraintName,
 					value: columnDefinition.default,
@@ -522,7 +538,7 @@ module.exports = (baseProvider, options, app) => {
 						increment: Number(_.get(jsonSchema, 'identity.identityIncrement', 0)),
 					},
 				}),
-			});
+			};
 		},
 
 		hydrateIndex(indexData, tableData, schemaData) {
@@ -566,7 +582,8 @@ module.exports = (baseProvider, options, app) => {
 				idToNameHashTable[_.get(jsonSchema, 'periodForSystemTime[0].startTime[0].keyId', '')];
 			const temporalTableTimeEndColumnName =
 				idToNameHashTable[_.get(jsonSchema, 'periodForSystemTime[0].endTime[0].keyId', '')];
-			return Object.assign({}, tableData, {
+			return {
+				...tableData,
 				foreignKeyConstraints: tableData.foreignKeyConstraints || [],
 				keyConstraints: keyHelper.getTableKeyConstraints({ jsonSchema }),
 				ifNotExist: jsonSchema.ifNotExist,
@@ -596,7 +613,7 @@ module.exports = (baseProvider, options, app) => {
 				memoryOptimizedIndexes: isMemoryOptimized
 					? getMemoryOptimizedIndexes(entityData, tableData.schemaData)
 					: [],
-			});
+			};
 		},
 
 		hydrateViewColumn(data) {
@@ -1080,3 +1097,5 @@ module.exports = (baseProvider, options, app) => {
 		},
 	};
 };
+
+module.exports = ddlProvider;

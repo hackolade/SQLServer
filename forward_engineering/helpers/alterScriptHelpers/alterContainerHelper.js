@@ -1,8 +1,9 @@
-module.exports = (app, options) => {
-	const _ = app.require('lodash');
+const _ = require('lodash');
+const { AlterScriptDto } = require('./types/AlterScriptDto');
+const { getDbData } = require('../../utils/general');
+
+const alterContainerHelper = (app, options) => {
 	const ddlProvider = require('../../ddlProvider')(null, options, app);
-	const { getDbData } = app.require('@hackolade/ddl-fe-utils').general;
-	const { AlterScriptDto } = require('./types/AlterScriptDto');
 
 	const getAddContainerScriptDto = containerData => {
 		const constructedDbData = getDbData([containerData]);
@@ -55,13 +56,13 @@ module.exports = (app, options) => {
 				return undefined;
 			}
 
-			if (!oldComment) {
+			if (oldComment) {
+				script = getUpdateSchemaCommentScript({ schemaName, comment: newComment });
+			} else {
 				script = ddlProvider.createSchemaComment({
 					schemaName,
 					comment: newComment,
 				});
-			} else {
-				script = getUpdateSchemaCommentScript({ schemaName, comment: newComment });
 			}
 
 			return AlterScriptDto.getInstance([script], true, false);
@@ -75,3 +76,5 @@ module.exports = (app, options) => {
 		getSchemasModifyCommentsAlterScriptsDto,
 	};
 };
+
+module.exports = alterContainerHelper;

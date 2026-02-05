@@ -1,246 +1,273 @@
-'use strict';
+const _ = require('lodash');
+const sqlFormatter = require('sql-formatter');
+const { RESERVED_WORDS_AS_ARRAY } = require('../enums/reservedWords');
 
-module.exports = _ => {
-	const sqlFormatter = require('sql-formatter');
-	const { RESERVED_WORDS_AS_ARRAY } = require('../enums/reservedWords');
+/**
+ * @typedef {((args: any) => string) | ((args: any) => ChainFunction)} ChainFunction
+ * */
 
-	/**
-	 * @typedef {((args: any) => string) | ((args: any) => ChainFunction)} ChainFunction
-	 * */
-
-	/**
-	 * @return {ChainFunction}
-	 * */
-	const buildStatement = (mainStatement, isActivated) => {
-		let composeStatements = (...statements) => {
-			return statements.reduce((result, statement) => result + statement, mainStatement);
-		};
-
-		const chain = (...args) => {
-			if (args.length) {
-				composeStatements = composeStatements.bind(null, getStatement(...args));
-
-				return chain;
-			}
-
-			return commentDeactivatedStatements(composeStatements(), isActivated);
-		};
-
-		/**
-		 * @param condition {boolean}
-		 * @param statement {string}
-		 * @return {string}
-		 * */
-		const getStatement = (condition, statement) => {
-			if (condition && statement === ')') {
-				return '\n)';
-			}
-			if (statement === ';') {
-				return statement;
-			}
-
-			if (condition) {
-				return '\n' + indentString(statement);
-			}
-
-			return '';
-		};
-
-		return chain;
+/**
+ * @return {ChainFunction}
+ * */
+const buildStatement = (mainStatement, isActivated) => {
+	let composeStatements = (...statements) => {
+		return statements.reduce((result, statement) => result + statement, mainStatement);
 	};
 
-	const isEscaped = name => /`[\s\S]*`/.test(name);
+	const chain = (...args) => {
+		if (args.length) {
+			composeStatements = composeStatements.bind(null, getStatement(...args));
 
-	const prepareName = (name = '') => {
-		const containSpaces = /[\s-]/g;
-		if (containSpaces.test(name) && !isEscaped(name)) {
-			return `\`${name}\``;
-		} else if (RESERVED_WORDS_AS_ARRAY.includes(name.toUpperCase())) {
-			return `\`${name}\``;
-		} else if (name === '') {
-			return '';
-		} else if (!isNaN(name)) {
-			return `\`${name}\``;
+			return chain;
 		}
 
-		return name;
-	};
-	const replaceSpaceWithUnderscore = (name = '') => {
-		return name.replace(/\s/g, '_');
-	};
-
-	const getFullTableName = collection => {
-		const collectionSchema = { ...collection, ...(_.omit(collection?.role, 'properties') || {}) };
-		const tableName = getEntityName(collectionSchema);
-		const schemaName = collectionSchema.compMod?.keyspaceName;
-
-		return getNamePrefixedWithSchemaName(tableName, schemaName);
-	};
-
-	const getFullCollectionName = collectionSchema => {
-		const collectionName = getEntityName(collectionSchema);
-		const bucketName = collectionSchema.compMod?.keyspaceName;
-
-		return getNamePrefixedWithSchemaName(collectionName, bucketName);
-	};
-
-	const getName = entity => entity.code || entity.collectionName || entity.name || '';
-
-	const getRelationshipName = relationship => relationship.name || '';
-
-	const getTab = (tabNum, configData) => (Array.isArray(configData) ? configData[tabNum] || {} : {});
-	const indentString = (str, tab = 4) =>
-		(str || '')
-			.split('\n')
-			.map(s => ' '.repeat(tab) + s)
-			.join('\n');
-
-	const descriptors = {};
-	const getTypeDescriptor = typeName => {
-		if (descriptors[typeName]) {
-			return descriptors[typeName];
-		}
-
-		try {
-			descriptors[typeName] = require(`../../types/${typeName}.json`);
-
-			return descriptors[typeName];
-		} catch (e) {
-			return {};
-		}
-	};
-
-	const getNamePrefixedWithSchemaName = (name, schemaName) => {
-		if (schemaName) {
-			return `${wrapInBrackets(schemaName)}.${wrapInBrackets(name)}`;
-		}
-
-		return wrapInBrackets(name);
+		return commentDeactivatedStatements(composeStatements(), isActivated);
 	};
 
 	/**
+	 * @param condition {boolean}
 	 * @param statement {string}
-	 * @param isActivated {boolean}
 	 * @return {string}
 	 * */
-	const commentDeactivatedStatements = (statement, isActivated = true) => {
-		if (isActivated) {
+	const getStatement = (condition, statement) => {
+		if (condition && statement === ')') {
+			return '\n)';
+		}
+		if (statement === ';') {
 			return statement;
 		}
-		const insertBeforeEachLine = (statement, insertValue) =>
-			statement
-				.split('\n')
-				.map(line => `${insertValue}${line}`)
-				.join('\n');
 
-		return insertBeforeEachLine(statement, '-- ');
-	};
-
-	const commentDeactivatedInlineKeys = (keys, deactivatedKeyNames) => {
-		const [activatedKeys, deactivatedKeys] = _.partition(
-			keys,
-			key => !(deactivatedKeyNames.has(key) || deactivatedKeyNames.has(key.slice(1, -1))),
-		);
-		if (activatedKeys.length === 0) {
-			return { isAllKeysDeactivated: true, keysString: deactivatedKeys.join(', ') };
-		}
-		if (deactivatedKeys.length === 0) {
-			return { isAllKeysDeactivated: false, keysString: activatedKeys.join(', ') };
+		if (condition) {
+			return '\n' + indentString(statement);
 		}
 
-		return {
-			isAllKeysDeactivated: false,
-			keysString: `${activatedKeys.join(', ')} /*, ${deactivatedKeys.join(', ')} */`,
-		};
+		return '';
 	};
 
-	const wrapInBrackets = name => {
-		return `[${name}]`;
-	};
+	return chain;
+};
 
-	const wrapInBracketsIfNecessary = name => {
-		return name.replace(/^(?!\().*?(?<!\))$/, '($&)');
-	};
+const isEscaped = name => /`[\s\S]*`/.test(name);
 
-	const escapeSpecialCharacters = (name = '') => {
-		return name.replace(/'/g, "''");
-	};
+const prepareName = (name = '') => {
+	const containSpaces = /[\s-]/g;
+	if (containSpaces.test(name) && !isEscaped(name)) {
+		return `\`${name}\``;
+	} else if (RESERVED_WORDS_AS_ARRAY.includes(name.toUpperCase())) {
+		return `\`${name}\``;
+	} else if (name === '') {
+		return '';
+	} else if (!Number.isNaN(name)) {
+		return `\`${name}\``;
+	}
 
-	const skipSqlCommentsPattern = /^\s*(EXEC\b|.*\bMS_DESCRIPTION\b)/i;
+	return name;
+};
 
-	const buildScript = statements => {
-		const formattedScripts = statements
-			.filter(Boolean)
-			.map(script =>
-				skipSqlCommentsPattern.test(script)
-					? script
-					: sqlFormatter.format(script, { indent: '    ' }).replace(/\{ \{ (.+?) } }/g, '{{$1}}'),
-			);
+const replaceSpaceWithUnderscore = (name = '') => {
+	return name.replace(/\s/g, '_');
+};
 
-		return formattedScripts.join('\n\n') + '\n\n';
-	};
+const getFullTableName = collection => {
+	const collectionSchema = { ...collection, ..._.omit(collection?.role, 'properties') };
+	const tableName = getEntityName(collectionSchema);
+	const schemaName = collectionSchema.compMod?.keyspaceName;
 
-	const getContainerName = compMod => compMod.keyspaceName;
+	return getNamePrefixedWithSchemaName(tableName, schemaName);
+};
 
-	const getFullEntityName = (dbName, entityName) => (dbName ? `${dbName}.${entityName}` : entityName);
+const getFullCollectionName = collectionSchema => {
+	const collectionName = getEntityName(collectionSchema);
+	const bucketName = collectionSchema.compMod?.keyspaceName;
 
-	const getEntityName = entityData => {
-		return (entityData && (entityData.code || entityData.collectionName)) || '';
-	};
+	return getNamePrefixedWithSchemaName(collectionName, bucketName);
+};
 
-	/**
-	 * @return {Array<any>}
-	 * */
-	const filterEmptyScripts = (...scripts) => scripts.filter(Boolean);
+const getName = entity => entity.code || entity.collectionName || entity.name || '';
 
-	const compareProperties =
-		_ =>
-		({ new: newProperty, old: oldProperty }) => {
-			if (!newProperty && !oldProperty) {
-				return;
-			}
+const getRelationshipName = relationship => relationship.name || '';
 
-			return !_.isEqual(newProperty, oldProperty);
-		};
+const getTab = (tabNum, configData) => (Array.isArray(configData) ? configData[tabNum] || {} : {});
 
-	const compareObjectsByProperties = (obj1, obj2, properties) => {
-		return properties.some(prop => obj1[prop] !== obj2[prop]);
-	};
+const indentString = (str, tab = 4) =>
+	(str || '')
+		.split('\n')
+		.map(s => ' '.repeat(tab) + s)
+		.join('\n');
 
-	const getSchemaOfAlterCollection = collection => {
-		return { ...collection, ...(_.omit(collection?.role, 'properties') || {}) };
-	};
+const descriptors = {};
+const getTypeDescriptor = typeName => {
+	if (descriptors[typeName]) {
+		return descriptors[typeName];
+	}
 
-	const buildDefaultPKName = (tableName, columnName) => {
-		const PKName = `PK_${tableName}_${columnName}`;
+	try {
+		descriptors[typeName] = require(`../../types/${typeName}.json`);
 
-		return wrapInBrackets(PKName);
-	};
+		return descriptors[typeName];
+	} catch {
+		return {};
+	}
+};
+
+const getNamePrefixedWithSchemaName = (name, schemaName) => {
+	if (schemaName) {
+		return `${wrapInBrackets(schemaName)}.${wrapInBrackets(name)}`;
+	}
+
+	return wrapInBrackets(name);
+};
+
+/**
+ * @param statement {string}
+ * @param isActivated {boolean}
+ * @return {string}
+ * */
+const commentDeactivatedStatements = (statement, isActivated = true) => {
+	if (isActivated) {
+		return statement;
+	}
+	const insertBeforeEachLine = (statement, insertValue) =>
+		statement
+			.split('\n')
+			.map(line => `${insertValue}${line}`)
+			.join('\n');
+
+	return insertBeforeEachLine(statement, '-- ');
+};
+
+const commentDeactivatedInlineKeys = (keys, deactivatedKeyNames) => {
+	const [activatedKeys, deactivatedKeys] = _.partition(
+		keys,
+		key => !(deactivatedKeyNames.has(key) || deactivatedKeyNames.has(key.slice(1, -1))),
+	);
+	if (activatedKeys.length === 0) {
+		return { isAllKeysDeactivated: true, keysString: deactivatedKeys.join(', ') };
+	}
+	if (deactivatedKeys.length === 0) {
+		return { isAllKeysDeactivated: false, keysString: activatedKeys.join(', ') };
+	}
 
 	return {
-		buildStatement,
-		getName,
-		getTab,
-		indentString,
-		getTypeDescriptor,
-		getRelationshipName,
-		prepareName,
-		replaceSpaceWithUnderscore,
-		commentDeactivatedStatements,
-		commentDeactivatedInlineKeys,
-		buildScript,
-		wrapInBrackets,
-		wrapInBracketsIfNecessary,
-		escapeSpecialCharacters,
-		getFullEntityName,
-		getFullTableName,
-		getFullCollectionName,
-		getContainerName,
-		getEntityName,
-		filterEmptyScripts,
-		getSchemaOfAlterCollection,
-		getNamePrefixedWithSchemaName,
-		buildDefaultPKName,
-		compareObjectsByProperties,
+		isAllKeysDeactivated: false,
+		keysString: `${activatedKeys.join(', ')} /*, ${deactivatedKeys.join(', ')} */`,
 	};
+};
+
+const wrapInBrackets = name => {
+	return `[${name}]`;
+};
+
+const wrapInBracketsIfNecessary = name => {
+	return name.replace(/^(?!\().*?(?<!\))$/, '($&)');
+};
+
+const escapeSpecialCharacters = (name = '') => {
+	return name.replace(/'/g, "''");
+};
+
+const skipSqlCommentsPattern = /^\s*(EXEC\b|.*\bMS_DESCRIPTION\b)/i;
+
+const buildScript = statements => {
+	const formattedScripts = statements
+		.filter(Boolean)
+		.map(script =>
+			skipSqlCommentsPattern.test(script)
+				? script
+				: sqlFormatter.format(script, { indent: '    ' }).replace(/\{ \{ (.+?) } }/g, '{{$1}}'),
+		);
+
+	return formattedScripts.join('\n\n') + '\n\n';
+};
+
+const getContainerName = compMod => compMod.keyspaceName;
+
+const getFullEntityName = (dbName, entityName) => (dbName ? `${dbName}.${entityName}` : entityName);
+
+const getEntityName = entityData => {
+	return (entityData && (entityData.code || entityData.collectionName)) || '';
+};
+
+/**
+ * @return {Array<any>}
+ * */
+const filterEmptyScripts = (...scripts) => scripts.filter(Boolean);
+
+const compareObjectsByProperties = (obj1, obj2, properties) => {
+	return properties.some(prop => obj1[prop] !== obj2[prop]);
+};
+
+const getSchemaOfAlterCollection = collection => {
+	return { ...collection, ..._.omit(collection?.role, 'properties') };
+};
+
+const buildDefaultPKName = (tableName, columnName) => {
+	const PKName = `PK_${tableName}_${columnName}`;
+
+	return wrapInBrackets(PKName);
+};
+
+const checkAllKeysDeactivated = keys => (keys.length ? keys.every(key => !_.get(key, 'isActivated', true)) : false);
+
+const divideIntoActivatedAndDeactivated = (items, mapFunction) => {
+	const activatedItems = items.filter(item => _.get(item, 'isActivated', true)).map(mapFunction);
+	const deactivatedItems = items.filter(item => !_.get(item, 'isActivated', true)).map(mapFunction);
+	return { activatedItems, deactivatedItems };
+};
+
+const hasType = (types, type) =>
+	Object.keys(types)
+		.map(element => _.toLower(element))
+		.includes(_.toLower(type));
+
+const clean = obj =>
+	Object.entries(obj)
+		.filter(([name, value]) => !_.isNil(value))
+		.reduce((result, [name, value]) => ({ ...result, [name]: value }), {});
+
+const tab = (text, tab = '\t') =>
+	text
+		.split('\n')
+		.map(line => tab + line)
+		.join('\n');
+
+const getDbName = containerData => {
+	return _.get(containerData, '[0].code') || _.get(containerData, '[0].name', '');
+};
+
+const getDbData = containerData => {
+	return { ..._.get(containerData, '[0]', {}), name: getDbName(containerData) };
+};
+
+module.exports = {
+	buildStatement,
+	getName,
+	getTab,
+	indentString,
+	getTypeDescriptor,
+	getRelationshipName,
+	prepareName,
+	replaceSpaceWithUnderscore,
+	commentDeactivatedStatements,
+	commentDeactivatedInlineKeys,
+	buildScript,
+	wrapInBrackets,
+	wrapInBracketsIfNecessary,
+	escapeSpecialCharacters,
+	getFullEntityName,
+	getFullTableName,
+	getFullCollectionName,
+	getContainerName,
+	getEntityName,
+	filterEmptyScripts,
+	getSchemaOfAlterCollection,
+	getNamePrefixedWithSchemaName,
+	buildDefaultPKName,
+	compareObjectsByProperties,
+	checkAllKeysDeactivated,
+	divideIntoActivatedAndDeactivated,
+	hasType,
+	clean,
+	tab,
+	getDbData,
 };
