@@ -52,7 +52,9 @@ class DbtProvider {
 	 * @returns {boolean}
 	 */
 	hasType(type) {
-		return Object.keys(types).map(toLower).includes(toLower(type));
+		return Object.keys(types)
+			.map(element => toLower(element))
+			.includes(toLower(type));
 	}
 
 	/**

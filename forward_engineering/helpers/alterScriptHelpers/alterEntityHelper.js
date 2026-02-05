@@ -1,36 +1,35 @@
-'use strict';
+const _ = require('lodash');
+const { AlterScriptDto } = require('./types/AlterScriptDto');
+const { getRelationshipName } = require('./alterRelationshipsHelper');
+const { getEntityName, getFullTableName } = require('../../utils/general');
+const { createColumnDefinitionBySchema } = require('./columnHelpers/createColumnDefinition');
+const { modifyGroupItems, setIndexKeys } = require('./common');
+const { getTableName } = require('../general');
 
-module.exports = (app, options) => {
-	const _ = app.require('lodash');
-	const { createColumnDefinitionBySchema } = require('./columnHelpers/createColumnDefinition')(_);
-	const { getTableName } = require('../general')(app);
-	const { getFullTableName, getEntityName } = require('../../utils/general')(app.require('lodash'));
+const alterEntityHelper = (app, options) => {
 	const ddlProvider = require('../../ddlProvider')(null, options, app);
+
 	const { generateIdToNameHashTable, generateIdToActivatedHashTable } = app.require('@hackolade/ddl-fe-utils');
-	const { setIndexKeys, modifyGroupItems } = require('./common')(app);
-	const { getRenameColumnScriptsDto } = require('./columnHelpers/renameColumnHelpers')(app, ddlProvider);
-	const { getDefaultValueChangeDto } = require('./columnHelpers/defaultValueColumnHelper')(app, ddlProvider);
-	const { getChangedComputedColumnsScriptsDto } = require('./columnHelpers/alterComputedColumnHelpr')(
-		app,
-		ddlProvider,
-	);
-	const { getChangeTypeScriptsDto } = require('./columnHelpers/alterTypeHelper')(app, ddlProvider);
-	const { AlterScriptDto } = require('./types/AlterScriptDto');
+
+	const { getRenameColumnScriptsDto } = require('./columnHelpers/renameColumnHelpers')(ddlProvider);
+	const { getDefaultValueChangeDto } = require('./columnHelpers/defaultValueColumnHelper')(ddlProvider);
+	const { getChangedComputedColumnsScriptsDto } = require('./columnHelpers/alterComputedColumnHelper')(ddlProvider);
+	const { getChangeTypeScriptsDto } = require('./columnHelpers/alterTypeHelper')(ddlProvider);
 	const { getModifyCheckConstraintScriptDtos } = require('./entityHelpers/checkConstraintHelper');
 	const { getModifyPkConstraintsScriptDtos } = require('./entityHelpers/primaryKeyHelper');
 	const { getModifyNonNullColumnsScriptDtos } = require('./columnHelpers/notNullConstraintsHelper');
 	const { getModifyUniqueConstraintsScriptDtos } = require('./entityHelpers/uniqueConstraintHelper');
-	const { getRelationshipName } = require('./alterRelationshipsHelper');
 
 	/**
 	 * @param {Collection} collection
+	 * @param inlineDeltaRelationships
 	 * @return Array<AlterScriptDto>
 	 * */
 	const getAddCollectionScriptDto = (collection, inlineDeltaRelationships) => {
 		//done but need clean up
 		const schemaName = collection.compMod.keyspaceName;
 		const schemaData = { schemaName };
-		const jsonSchema = { ...collection, ...(collection?.role || {}) };
+		const jsonSchema = { ...collection, ...collection?.role };
 		const tableName = getEntityName(jsonSchema);
 		const idToNameHashTable = generateIdToNameHashTable(jsonSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(jsonSchema);
@@ -115,14 +114,14 @@ module.exports = (app, options) => {
 	 * @return {Array<AlterScriptDto>}
 	 * */
 	const getModifyCollectionScriptDto = collection => {
-		const jsonSchema = { ...collection, ...(collection?.role || {}) };
+		const jsonSchema = { ...collection, ...collection?.role };
 		const schemaName = collection.compMod?.keyspaceName;
 		const schemaData = { schemaName };
 		const idToNameHashTable = generateIdToNameHashTable(jsonSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(jsonSchema);
-		const modifyCheckConstraintScriptDtos = getModifyCheckConstraintScriptDtos(_, ddlProvider)(collection);
-		const modifyUniqueConstraintsScriptDtos = getModifyUniqueConstraintsScriptDtos(app, _, ddlProvider)(collection);
-		const modifyPKConstraintDtos = getModifyPkConstraintsScriptDtos(app, _, ddlProvider)(collection);
+		const modifyCheckConstraintScriptDtos = getModifyCheckConstraintScriptDtos(ddlProvider)(collection);
+		const modifyUniqueConstraintsScriptDtos = getModifyUniqueConstraintsScriptDtos(ddlProvider)(collection);
+		const modifyPKConstraintDtos = getModifyPkConstraintsScriptDtos(ddlProvider)(collection);
 		const indexesScriptsDtos = modifyGroupItems({
 			data: jsonSchema,
 			key: 'Indxs',
@@ -157,7 +156,7 @@ module.exports = (app, options) => {
 	 * @return {Array<AlterScriptDto> | undefined}
 	 * */
 	const getAddColumnScriptDto = collection => {
-		const collectionSchema = { ...collection, ...(_.omit(collection?.role, 'properties') || {}) };
+		const collectionSchema = { ...collection, ..._.omit(collection?.role, 'properties') };
 		const tableName = collectionSchema?.code || collectionSchema?.collectionName || collectionSchema?.name;
 		const schemaName = collectionSchema.compMod?.keyspaceName;
 		const fullName = getTableName(tableName, schemaName);
@@ -186,7 +185,7 @@ module.exports = (app, options) => {
 	 * @return {Array<AlterScriptDto> | undefined}
 	 * */
 	const getDeleteColumnScriptDto = collection => {
-		const collectionSchema = { ...collection, ...(_.omit(collection?.role, 'properties') || {}) };
+		const collectionSchema = { ...collection, ..._.omit(collection?.role, 'properties') };
 		const tableName = collectionSchema?.code || collectionSchema?.collectionName || collectionSchema?.name;
 		const schemaName = collectionSchema.compMod?.keyspaceName;
 		const fullName = getTableName(tableName, schemaName);
@@ -206,7 +205,7 @@ module.exports = (app, options) => {
 	 * @return {Array<AlterScriptDto> | undefined}
 	 * */
 	const getModifyColumnScriptDto = collection => {
-		const collectionSchema = { ...collection, ...(_.omit(collection?.role, 'properties') || {}) };
+		const collectionSchema = { ...collection, ..._.omit(collection?.role, 'properties') };
 		const tableName = collectionSchema?.code || collectionSchema?.collectionName || collectionSchema?.name;
 		const schemaName = collectionSchema.compMod?.keyspaceName;
 		const fullName = getTableName(tableName, schemaName);
@@ -218,7 +217,7 @@ module.exports = (app, options) => {
 			collectionSchema,
 			schemaName,
 		);
-		const modifyNotNullScriptDtos = getModifyNonNullColumnsScriptDtos(_, ddlProvider)(
+		const modifyNotNullScriptDtos = getModifyNonNullColumnsScriptDtos(ddlProvider)(
 			collection,
 			collectionSchema,
 			schemaName,
@@ -296,14 +295,14 @@ module.exports = (app, options) => {
 					return undefined;
 				}
 
-				if (!oldComment) {
+				if (oldComment) {
+					script = getTableUpdateCommentScript({ schemaName, tableName, comment: newComment });
+				} else {
 					script = ddlProvider.createTableComment({
 						schemaName,
 						tableName,
 						comment: newComment,
 					});
-				} else {
-					script = getTableUpdateCommentScript({ schemaName, tableName, comment: newComment });
 				}
 
 				return AlterScriptDto.getInstance([script], true, false);
@@ -330,7 +329,7 @@ module.exports = (app, options) => {
 
 	const getColumnsCreateCommentAlterScriptsDto = tables => {
 		return Object.keys(tables)
-			.map(tableName => {
+			.flatMap(tableName => {
 				const columns = tables[tableName].properties;
 				if (!columns) {
 					return [];
@@ -352,13 +351,12 @@ module.exports = (app, options) => {
 					return AlterScriptDto.getInstance([script], true, false);
 				});
 			})
-			.flat()
 			.filter(Boolean);
 	};
 
 	const getColumnsDropCommentAlterScriptsDto = tables => {
 		return Object.keys(tables)
-			.map(tableName => {
+			.flatMap(tableName => {
 				const columns = tables[tableName].properties;
 
 				if (!columns) {
@@ -375,13 +373,12 @@ module.exports = (app, options) => {
 						return AlterScriptDto.getInstance([script], true, true);
 					});
 			})
-			.flat()
 			.filter(Boolean);
 	};
 
 	const getColumnsModifyCommentAlterScriptsDto = tables => {
 		return Object.keys(tables)
-			.map(tableName => {
+			.flatMap(tableName => {
 				const columns = tables[tableName].properties;
 				if (!columns) {
 					return undefined;
@@ -403,15 +400,15 @@ module.exports = (app, options) => {
 						return undefined;
 					}
 
-					if (!oldComment) {
-						script = getColumnCreateCommentScript({
+					if (oldComment) {
+						script = getColumnUpdateCommentScript({
 							schemaName,
 							tableName,
 							columnName,
 							comment: newComment,
 						});
 					} else {
-						script = getColumnUpdateCommentScript({
+						script = getColumnCreateCommentScript({
 							schemaName,
 							tableName,
 							columnName,
@@ -422,7 +419,6 @@ module.exports = (app, options) => {
 					return AlterScriptDto.getInstance([script], true, false);
 				});
 			})
-			.flat()
 			.filter(Boolean);
 	};
 
@@ -440,3 +436,5 @@ module.exports = (app, options) => {
 		getColumnsModifyCommentAlterScriptsDto,
 	};
 };
+
+module.exports = alterEntityHelper;

@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @typedef {import('./helpers/alterScriptHelpers/types/AlterScriptDto').AlterScriptDto} AlterScriptDto
  * @typedef {import('./types/coreApplicationTypes').App} App
@@ -24,13 +22,15 @@
  * }} ContainerLevelAlterScriptData
  * */
 
+const _ = require('lodash');
+const { getAlterScriptDtos } = require('../alterScriptFromDeltaHelper');
+const { joinAlterScriptDtosIntoAlterScript } = require('../alterScriptFromDeltaHelper');
+
 const parseEntities = (entities, serializedItems) => {
 	return entities.reduce((result, entityId) => {
 		try {
-			return Object.assign({}, result, {
-				[entityId]: JSON.parse(serializedItems[entityId]),
-			});
-		} catch (e) {
+			return { ...result, [entityId]: JSON.parse(serializedItems[entityId]) };
+		} catch {
 			return result;
 		}
 	}, {});
@@ -38,7 +38,6 @@ const parseEntities = (entities, serializedItems) => {
 
 /**
  * @param data {CoreData}
- * @param app {App}
  * @return {{
  *      jsonSchema: unknown,
  *      modelDefinitions: ModelDefinitions | unknown,
@@ -48,9 +47,7 @@ const parseEntities = (entities, serializedItems) => {
  *      entityData: unknown,
  * }}
  * */
-const parseDataForEntityLevelScript = (data, app) => {
-	const _ = app.require('lodash');
-
+const parseDataForEntityLevelScript = data => {
 	const jsonSchema = JSON.parse(data.jsonSchema);
 	const modelDefinitions = JSON.parse(data.modelDefinitions);
 	const internalDefinitions = _.isObject(data.internalDefinitions)
@@ -77,10 +74,7 @@ const parseDataForEntityLevelScript = (data, app) => {
  * */
 const getEntityLevelAlterScriptDtos =
 	(data, app) =>
-	({ externalDefinitions, modelDefinitions, jsonSchema, internalDefinitions }) => {
-		const { getAlterScriptDtos } = require('../alterScriptFromDeltaHelper')(app.require('lodash'));
-		const definitions = [modelDefinitions, internalDefinitions, externalDefinitions];
-
+	({ jsonSchema }) => {
 		return getAlterScriptDtos(jsonSchema, app, data.options);
 	};
 
@@ -90,7 +84,6 @@ const getEntityLevelAlterScriptDtos =
  * @return {(dto: EntityLevelAlterScriptData) => string}
  * */
 const buildEntityLevelAlterScript = (data, app) => entityLevelAlterScriptDto => {
-	const { joinAlterScriptDtosIntoAlterScript } = require('../alterScriptFromDeltaHelper')(app.require('lodash'));
 	const alterScriptDtos = getEntityLevelAlterScriptDtos(data, app)(entityLevelAlterScriptDto);
 
 	return joinAlterScriptDtosIntoAlterScript(alterScriptDtos, data);

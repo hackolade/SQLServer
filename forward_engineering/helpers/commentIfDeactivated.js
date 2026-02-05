@@ -1,5 +1,5 @@
 const BEFORE_DEACTIVATED_STATEMENT = '-- ';
-const REG_FOR_MULTYLINE_COMMENT = /(\n\/\*\n[\s\S]*?\n\s\*\/\n)|((\n\/\*\n[\s\S]*?\n\s\*\/)$)/gi;
+const REG_FOR_MULTILINE_COMMENT = /(\n\/\*\n[\s\S]*?\n\s\*\/\n)|((\n\/\*\n[\s\S]*?\n\s\*\/)$)/gi;
 
 const commentIfDeactivated = (statement, data, isPartOfLine) => {
 	if (data.isActivated === false) {
@@ -14,7 +14,7 @@ const commentIfDeactivated = (statement, data, isPartOfLine) => {
 	return statement;
 };
 
-const filterDeactivatedQuery = query => query.replace(REG_FOR_MULTYLINE_COMMENT, '');
+const filterDeactivatedQuery = query => query.replace(REG_FOR_MULTILINE_COMMENT, '');
 
 const queryIsDeactivated = (query = '') => query.startsWith(BEFORE_DEACTIVATED_STATEMENT);
 

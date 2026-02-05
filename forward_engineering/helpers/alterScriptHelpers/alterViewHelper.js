@@ -1,15 +1,17 @@
-module.exports = (app, options) => {
-	const _ = app.require('lodash');
-	const { mapProperties } = app.require('@hackolade/ddl-fe-utils');
-	const { checkCompModEqual, setIndexKeys, modifyGroupItems } = require('./common')(app);
-	const { generateIdToNameHashTable, generateIdToActivatedHashTable } = app.require('@hackolade/ddl-fe-utils');
+const _ = require('lodash');
+const { getTableName } = require('../general');
+const { checkCompModEqual, setIndexKeys, modifyGroupItems } = require('./common');
+const { AlterScriptDto } = require('./types/AlterScriptDto');
+
+const alterViewHelper = (app, options) => {
+	const { generateIdToNameHashTable, generateIdToActivatedHashTable, mapProperties } =
+		app.require('@hackolade/ddl-fe-utils');
+
 	const ddlProvider = require('../../ddlProvider')(null, options, app);
-	const { getTableName } = require('../general')(app);
-	const { AlterScriptDto } = require('./types/AlterScriptDto');
 
 	const getAddViewScriptDto = view => {
 		const viewName = getTableName(view.code || view.name, view?.role?.compMod?.keyspaceName);
-		const viewSchema = { ...view, ...(view.role ?? {}) };
+		const viewSchema = { ...view, ...view.role };
 		const idToNameHashTable = generateRefToNameHashTable(viewSchema);
 		const idToActivatedHashTable = generateRefToActivatedHashTable(viewSchema);
 		const schemaData = { schemaName: viewSchema.compMod.keyspaceName };
@@ -40,7 +42,7 @@ module.exports = (app, options) => {
 	};
 
 	const getModifiedViewScriptDto = view => {
-		const viewSchema = { ...view, ...(view.role ?? {}) };
+		const viewSchema = { ...view, ...view.role };
 		const idToNameHashTable = generateIdToNameHashTable(viewSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(viewSchema);
 		const schemaData = { schemaName: viewSchema.compMod.keyspaceName };
@@ -185,14 +187,14 @@ module.exports = (app, options) => {
 					return undefined;
 				}
 
-				if (!oldComment) {
+				if (oldComment) {
+					script = getViewUpdateCommentScript({ schemaName, viewName, comment: newComment });
+				} else {
 					script = ddlProvider.createViewComment({
 						schemaName,
 						viewName,
 						comment: newComment,
 					});
-				} else {
-					script = getViewUpdateCommentScript({ schemaName, viewName, comment: newComment });
 				}
 
 				return AlterScriptDto.getInstance([script], true, false);
@@ -228,3 +230,5 @@ module.exports = (app, options) => {
 		getViewsModifyCommentsAlterScriptsDto,
 	};
 };
+
+module.exports = alterViewHelper;

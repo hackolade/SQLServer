@@ -1,12 +1,9 @@
-'use strict';
-
 const _ = require('lodash');
+const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
+const { AlterScriptDto } = require('../types/AlterScriptDto');
+const { compareObjectsByProperties } = require('../../../utils/general');
 
-module.exports = (app, ddlProvider) => {
-	const { createColumnDefinitionBySchema } = require('./createColumnDefinition')(_);
-	const { AlterScriptDto } = require('../types/AlterScriptDto');
-	const { compareObjectsByProperties } = require('../../../utils/general')(_);
-
+const alterComputedColumnHelper = ddlProvider => {
 	const changeToComputed = (fullName, columnName, columnDefinition) => {
 		return [
 			AlterScriptDto.getInstance([ddlProvider.dropColumn(fullName, columnName)], true, true),
@@ -69,17 +66,19 @@ module.exports = (app, ddlProvider) => {
 	};
 
 	const getChangedComputedColumnsScriptsDto = ({ collection, fullName, collectionSchema, schemaName }) => {
-		return _.flatten(
-			_.toPairs(collection.properties).reduce((result, [columnName, jsonSchema]) => {
+		return _.toPairs(collection.properties)
+			.reduce((result, [columnName, jsonSchema]) => {
 				const oldJsonSchema = _.omit(collection.role?.properties?.[columnName], ['compMod']);
 
 				const currentRequiredColumnNames = collection.required || [];
 				const previousRequiredColumnNames = collection.role.required || [];
 
-				const toAddNotNull =
-					_.difference(currentRequiredColumnNames, previousRequiredColumnNames).indexOf(columnName) !== -1;
-				const toRemoveNotNull =
-					_.difference(previousRequiredColumnNames, currentRequiredColumnNames).indexOf(columnName) !== -1;
+				const toAddNotNull = _.difference(currentRequiredColumnNames, previousRequiredColumnNames).includes(
+					columnName,
+				);
+				const toRemoveNotNull = _.difference(previousRequiredColumnNames, currentRequiredColumnNames).includes(
+					columnName,
+				);
 
 				result.push(
 					generateSqlAlterScript({
@@ -95,11 +94,13 @@ module.exports = (app, ddlProvider) => {
 				);
 
 				return result;
-			}, []),
-		);
+			}, [])
+			.flat();
 	};
 
 	return {
 		getChangedComputedColumnsScriptsDto,
 	};
 };
+
+module.exports = alterComputedColumnHelper;

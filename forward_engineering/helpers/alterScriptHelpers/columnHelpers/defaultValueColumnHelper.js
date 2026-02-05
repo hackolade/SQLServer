@@ -1,9 +1,9 @@
-module.exports = (app, ddlProvider) => {
-	const _ = app.require('lodash');
-	const { AlterScriptDto } = require('../types/AlterScriptDto');
-	const { sanitizeConstraintName, hasType, getTableName } = require('../../../helpers/general')(app);
-	const { decorateDefault } = require('../../columnDefinitionHelper')(app);
+const _ = require('lodash');
+const { AlterScriptDto } = require('../types/AlterScriptDto');
+const { sanitizeConstraintName, hasType, getTableName } = require('../../../helpers/general');
+const { decorateDefault } = require('../../columnDefinitionHelper');
 
+const defaultValueColumnHelper = ddlProvider => {
 	const getDefaultValueChangeDto = (collection, fullName) => {
 		const scripts = [];
 
@@ -101,3 +101,5 @@ module.exports = (app, ddlProvider) => {
 		getDefaultValueChangeDto,
 	};
 };
+
+module.exports = defaultValueColumnHelper;
