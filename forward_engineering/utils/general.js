@@ -162,8 +162,8 @@ const wrapInBracketsIfNecessary = name => {
 	return name.replace(/^(?!\().*?(?<!\))$/, '($&)');
 };
 
-const escapeSpecialCharacters = (name = '') => {
-	return name.replace(/'/g, "''");
+const escapeSpecialCharacters = (str = '') => {
+	return str.replaceAll("'", "''").replaceAll('\n', '\r\n');
 };
 
 const skipSqlCommentsPattern = /^\s*(EXEC\b|.*\bMS_DESCRIPTION\b)/i;
