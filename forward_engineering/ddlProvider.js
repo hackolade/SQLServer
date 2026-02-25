@@ -646,6 +646,14 @@ const ddlProvider = (baseProvider, options, app) => {
 			return commentIfDeactivated(statement, data, isPartOfLine);
 		},
 
+		commentStatement(statement) {
+			return commentIfDeactivated(statement, { isActivated: false });
+		},
+
+		prepareName(name) {
+			return getTableName(name);
+		},
+
 		// * DROP statements for alter script from delta model
 		dropSchema(name) {
 			return assignTemplates(templates.dropSchema, {

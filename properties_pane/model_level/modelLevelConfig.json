@@ -2,9 +2,9 @@
 * Copyright © 2016-2017 by IntegrIT S.A. dba Hackolade.  All rights reserved.
 *
 * The copyright to the computer software herein is the property of IntegrIT S.A.
-* The software may be used and/or copied only with the written permission of 
-* IntegrIT S.A. or in accordance with the terms and conditions stipulated in 
-* the agreement/contract under which the software has been supplied. 
+* The software may be used and/or copied only with the written permission of
+* IntegrIT S.A. or in accordance with the terms and conditions stipulated in
+* the agreement/contract under which the software has been supplied.
 
 In order to define custom properties for any object's properties pane, you may copy/paste from the following,
 making sure that you maintain a proper JSON format.
@@ -85,6 +85,166 @@ making sure that you maintain a proper JSON format.
 							]
 						},
 						"adapter": "adaptJsonTypesToVarchar"
+					}
+				]
+			},
+			{
+				"propertyName": "Custom scripts",
+				"propertyType": "block",
+				"propertyKeyword": "customScripts",
+				"propertyTooltip": "",
+				"structure": [
+					{
+						"propertyName": "Header script",
+						"propertyKeyword": "headerScript",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
+					},
+					{
+						"propertyName": "Footer script",
+						"propertyKeyword": "footerScript",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
+					},
+					{
+						"propertyName": "Before each CREATE SCHEMA",
+						"propertyKeyword": "beforeCreateContainer",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
+					},
+					{
+						"propertyName": "After each CREATE SCHEMA",
+						"propertyKeyword": "afterCreateContainer",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
+					},
+					{
+						"propertyName": "Before each CREATE TABLE",
+						"propertyKeyword": "beforeCreateEntity",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
+					},
+					{
+						"propertyName": "After each CREATE TABLE",
+						"propertyKeyword": "afterCreateEntity",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
+					},
+					{
+						"propertyName": "Before each CREATE VIEW",
+						"propertyKeyword": "beforeCreateView",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
+					},
+					{
+						"propertyName": "After each CREATE VIEW",
+						"propertyKeyword": "afterCreateView",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"structure": [
+							{
+								"propertyName": "Script",
+								"propertyKeyword": "script",
+								"propertyType": "details",
+								"markdown": false,
+								"template": "codeEditor",
+								"templateOptions": {
+									"editorDialect": "sql",
+									"customScriptVariables": true
+								}
+							}
+						]
 					}
 				]
 			},
