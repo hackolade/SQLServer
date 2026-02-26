@@ -1,4 +1,4 @@
-const BEFORE_DEACTIVATED_STATEMENT = '-- ';
+const BEFORE_DEACTIVATED_STATEMENT = '--';
 const REG_FOR_MULTILINE_COMMENT = /(\n\/\*\n[\s\S]*?\n\s\*\/\n)|((\n\/\*\n[\s\S]*?\n\s\*\/)$)/gi;
 
 const commentIfDeactivated = (statement, data, isPartOfLine) => {
@@ -8,7 +8,7 @@ const commentIfDeactivated = (statement, data, isPartOfLine) => {
 		} else if (statement.includes('\n')) {
 			return '/*\n' + statement + ' */\n';
 		} else {
-			return BEFORE_DEACTIVATED_STATEMENT + statement;
+			return BEFORE_DEACTIVATED_STATEMENT + ' ' + statement;
 		}
 	}
 	return statement;
