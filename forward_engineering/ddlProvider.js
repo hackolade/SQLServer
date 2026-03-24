@@ -55,12 +55,13 @@ const {
 	wrapIfNotExistView,
 } = require('./helpers/ifNotExistStatementHelper');
 const { getPartitionedTables, getCreateViewData } = require('./helpers/viewHelper');
+const { getParameters, hydrateProcedures } = require('./helpers/proceduresHelper');
 
 const ddlProvider = (baseProvider, options, app) => {
 	const terminator = getTerminator(options);
 
 	return {
-		createSchema({ schemaName, databaseName, ifNotExist, comment, isActivated = true }) {
+		createSchema({ schemaName, databaseName, ifNotExist, comment, procedures = [], isActivated = true }) {
 			const schemaTerminator = ifNotExist ? ';' : terminator;
 
 			const schemaComment = comment
@@ -71,47 +72,46 @@ const ddlProvider = (baseProvider, options, app) => {
 					})
 				: '';
 
-			let schemaStatement = commentIfDeactivated(
-				assignTemplates(templates.createSchema, {
-					name: schemaName,
-					terminator: schemaTerminator,
-					comment: schemaComment ? `\n\n${schemaComment}` : '',
-				}),
-				{ isActivated },
-			);
+			let databaseStatement = '';
+			let useDatabaseStatement = '';
+			let schemaStatement = '';
 
-			if (!databaseName) {
-				return ifNotExist
-					? wrapIfNotExistSchema({ templates, schemaStatement, schemaName, terminator })
-					: schemaStatement;
-			}
-
-			const databaseStatement = wrapIfNotExistDatabase({
-				templates,
-				databaseName,
-				terminator,
-				databaseStatement: assignTemplates(templates.createDatabase, {
-					name: databaseName,
-					terminator: schemaTerminator,
-				}),
-			});
-
-			const useStatement = assignTemplates(templates.useDatabase, {
-				name: databaseName,
+			schemaStatement = assignTemplates(templates.createSchema, {
+				name: schemaName,
 				terminator: schemaTerminator,
+				comment: schemaComment ? `\n\n${schemaComment}` : '',
 			});
+
+			schemaStatement = commentIfDeactivated(schemaStatement, { isActivated });
 
 			if (ifNotExist) {
-				return (
-					databaseStatement +
-					'\n\n' +
-					useStatement +
-					'\n\n' +
-					wrapIfNotExistSchema({ templates, schemaStatement, schemaName, terminator })
-				);
+				schemaStatement = wrapIfNotExistSchema({ templates, schemaStatement, schemaName, terminator });
 			}
 
-			return databaseStatement + '\n\n' + useStatement + '\n\n' + schemaStatement;
+			if (databaseName) {
+				databaseStatement = wrapIfNotExistDatabase({
+					templates,
+					databaseName,
+					terminator,
+					databaseStatement: assignTemplates(templates.createDatabase, {
+						name: databaseName,
+						terminator: schemaTerminator,
+					}),
+				});
+
+				useDatabaseStatement = assignTemplates(templates.useDatabase, {
+					name: databaseName,
+					terminator: schemaTerminator,
+				});
+			}
+
+			const procedureStatements = procedures.map(procedure =>
+				this.createProcedure({ ...procedure, schemaName, isActivated }),
+			);
+
+			return [databaseStatement, useDatabaseStatement, schemaStatement, ...procedureStatements]
+				.filter(Boolean)
+				.join('\n\n');
 		},
 
 		createDefaultConstraint(data, tableName, terminator = ';') {
@@ -557,13 +557,14 @@ const ddlProvider = (baseProvider, options, app) => {
 			};
 		},
 
-		hydrateSchema(containerData) {
+		hydrateSchema(containerData, { procedures } = {}) {
 			return {
 				schemaName: containerData.name,
 				databaseName: containerData.databaseName,
 				ifNotExist: containerData.ifNotExist,
 				comment: containerData.role?.description ?? containerData.description,
 				isActivated: containerData.isActivated,
+				procedures: hydrateProcedures(procedures),
 			};
 		},
 
@@ -1093,6 +1094,51 @@ const ddlProvider = (baseProvider, options, app) => {
 				constraintName,
 				terminator,
 			});
+		},
+
+		createProcedureComment({ schemaName, procedureName, comment, customTerminator }) {
+			if (!schemaName) {
+				return '';
+			}
+
+			return assignTemplates(templates.createProcedureComment, {
+				value: escapeSpecialCharacters(comment),
+				schemaName: wrapInBrackets(schemaName),
+				procedureName: wrapInBrackets(procedureName),
+				terminator: customTerminator ?? terminator,
+			});
+		},
+
+		createProcedure({
+			schemaName,
+			isActivated,
+			name,
+			description,
+			orReplace,
+			inputArgs,
+			body,
+			encryption,
+			recompile,
+			executeAs,
+			forReplication,
+		}) {
+			const procedureName = getTableName(name, schemaName);
+			const procedureComment = description
+				? this.createProcedureComment({ schemaName, procedureName: name, comment: description })
+				: '';
+			const parameters = getParameters({ encryption, recompile, executeAs, forReplication });
+
+			const procedureStatement = assignTemplates(templates.createProcedure, {
+				orReplace: orReplace ? ' OR ALTER' : '',
+				name: procedureName,
+				arguments: (inputArgs || '').replace(/^\(([\s\S]+)\)$/, '$1'),
+				body,
+				parameters,
+				terminator,
+				comment: procedureComment ? `\n\n${procedureComment}` : '',
+			});
+
+			return commentIfDeactivated(procedureStatement, { isActivated });
 		},
 	};
 };
