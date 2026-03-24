@@ -1127,12 +1127,12 @@ const ddlProvider = (baseProvider, options, app) => {
 				? this.createProcedureComment({ schemaName, procedureName: name, comment: description })
 				: '';
 			const parameters = getParameters({ encryption, recompile, executeAs, forReplication });
-			const arguments = inputArgs ? `\n${inputArgs.replace(/^\(([\s\S]+)\)$/, '$1')}` : '';
+			const args = inputArgs ? `\n${inputArgs.replace(/^\(([\s\S]+)\)$/, '$1')}` : '';
 
 			const procedureStatement = assignTemplates(templates.createProcedure, {
 				orReplace: orReplace ? ' OR ALTER' : '',
 				name: procedureName,
-				arguments,
+				arguments: args,
 				body,
 				parameters,
 				terminator,
