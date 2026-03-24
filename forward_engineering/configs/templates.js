@@ -6,7 +6,7 @@ module.exports = {
 	createSchema: 'CREATE SCHEMA [${name}]${terminator}${comment}',
 
 	createProcedure:
-		'CREATE${orReplace} PROCEDURE ${name}\n${arguments}${parameters}\nAS\n${body}${terminator}${comment}',
+		'CREATE${orReplace} PROCEDURE ${name}${arguments}${parameters}\nAS\n${body}${terminator}${comment}',
 
 	createTable:
 		'CREATE${external} TABLE ${name} (\n' +
