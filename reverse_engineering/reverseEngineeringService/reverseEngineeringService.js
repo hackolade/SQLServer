@@ -20,6 +20,7 @@ const {
 	getSpatialIndexes,
 	getIndexesBucketCount,
 	getVersionInfo,
+	getDatabaseProcedures,
 } = require('../databaseService/databaseService');
 const {
 	transformDatabaseTableInfoToJSON,
@@ -296,6 +297,7 @@ const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => 
 		viewsIndexes,
 		fullTextIndexes,
 		spatialIndexes,
+		procedures,
 	] = await Promise.all([
 		getDatabaseIndexes({ client, dbName, tablesInfo, logger }),
 		getDatabaseMemoryOptimizedTables({ client, dbName, logger }),
@@ -305,6 +307,7 @@ const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => 
 		getViewsIndexes({ client, dbName, logger }),
 		getFullTextIndexes({ client, dbName, allUniqueSchemasAndTables, logger }),
 		getSpatialIndexes({ client, dbName, allUniqueSchemasAndTables, logger }),
+		getDatabaseProcedures({ client, dbName, logger }),
 	]);
 
 	const indexesBucketCount = await getIndexesBucketCount({
@@ -329,6 +332,7 @@ const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => 
 		viewsIndexes,
 		fullTextIndexes,
 		spatialIndexes,
+		procedures,
 	};
 };
 
@@ -490,12 +494,15 @@ const createTableResult = ({
 	spatialIndexes,
 	databaseCheckConstraints,
 	databaseMemoryOptimizedTables,
+	procedures,
 }) => {
 	const tableIndexes = [...databaseIndexes, ...fullTextIndexes, ...spatialIndexes].filter(
 		index => index.TableName === tableName && index.schemaName === schemaName,
 	);
 
 	const tableCheckConstraints = databaseCheckConstraints.filter(cc => cc.table === tableName);
+
+	const schemaProcedures = procedures.filter(procedure => procedure.schemaName === schemaName);
 
 	return {
 		collectionName: tableName,
@@ -511,7 +518,7 @@ const createTableResult = ({
 		documentTemplate: standardDoc,
 		collectionDocs: reorderedTableRows,
 		documents: cleanDocuments(reorderedTableRows),
-		bucketInfo: { databaseName: dbName },
+		bucketInfo: { databaseName: dbName, Procedures: schemaProcedures },
 		modelDefinitions: { definitions: getUserDefinedTypes(tableInfo, databaseUDT) },
 		emptyBucket: false,
 		validation: { jsonSchema },
@@ -549,6 +556,7 @@ const reverseCollectionsToJSON = async ({ client, tablesInfo, reverseEngineering
 		viewsIndexes,
 		fullTextIndexes,
 		spatialIndexes,
+		procedures,
 	} = await fetchDatabaseMetadata({ client, dbName, tablesInfo, logger });
 
 	return processSchemas({
@@ -565,6 +573,7 @@ const reverseCollectionsToJSON = async ({ client, tablesInfo, reverseEngineering
 		viewsIndexes,
 		fullTextIndexes,
 		spatialIndexes,
+		procedures,
 	});
 };
 
