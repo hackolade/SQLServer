@@ -5,6 +5,7 @@ const sql = require('mssql');
 const { getObjectsFromDatabase, getNewConnectionClientByDb } = require('./helpers');
 const getSampleDocSize = require('../helpers/getSampleDocSize');
 const { getConnectionClient } = require('./helpers/connection');
+const { parseProcedure } = require('../helpers/parsers/parseProcedure');
 
 const PERMISSION_DENIED_CODE = 297;
 
@@ -929,6 +930,36 @@ const getWhereClauseForUniqueSchemasAndTables = ({
 	`OBJECT_SCHEMA_NAME(${schemaAlias || tableAlias}.object_id) IN (${[...schemas].join(', ')})
 	AND OBJECT_NAME(${tableAlias}.object_id) IN (${[...tables].join(', ')})`;
 
+const getDatabaseProcedures = async ({ client, dbName, logger }) => {
+	const currentDbConnectionClient = await getClient({
+		client,
+		dbName,
+		meta: {
+			action: 'getting procedures query',
+			objects: ['sys.procedures', 'sys.schemas', 'sys.sql_modules'],
+			skip: true,
+		},
+		logger,
+	});
+
+	logger.log('info', { message: `Get '${dbName}' database procedures.` }, 'Reverse Engineering');
+
+	const response = await currentDbConnectionClient.query(`
+			SELECT
+    				s.name AS schema_name,
+    				p.name AS procedure_name,
+    				sm.definition AS procedure_body
+			FROM sys.procedures p
+						JOIN sys.schemas s ON p.schema_id = s.schema_id
+						LEFT JOIN sys.sql_modules sm ON p.object_id = sm.object_id
+			ORDER BY s.name, p.name;
+		`);
+
+	const rawProcedures = await mapResponse(response);
+
+	return rawProcedures.map(parseProcedure);
+};
+
 module.exports = {
 	getConnectionClient,
 	getObjectsFromDatabase,
@@ -955,4 +986,5 @@ module.exports = {
 	getTableSystemTime,
 	getVersionInfo,
 	getDescriptionComments,
+	getDatabaseProcedures,
 };
