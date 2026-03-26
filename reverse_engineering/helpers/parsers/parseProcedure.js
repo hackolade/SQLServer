@@ -17,7 +17,7 @@
  */
 
 const createProcedureRegexp =
-	/CREATE(?<orReplace>\s*OR\s*ALTER)?\s*(?:PROC|PROCEDURE)\s*(?:[^\s(]+)\s*(?<inputArgs>\((?:[^()']+|'[^']*'|\([^()]*\))*\)|(?:\s*@\w+[^@]*?)*?)?\s*(?<parameters>(?:WITH\s*(?:ENCRYPTION|RECOMPILE|,\s*|EXECUTE\s*AS\s*(?:OWNER|CALLER|SELF|'[^']+'))+)(?:\s*FOR\s*REPLICATION)?)?\s*AS\s*(?<body>\bBEGIN(?:[\s\S]+)(?:\bEND|\bRETURN\s+[^;\n]+))/im;
+	/CREATE(?<orReplace>\s*OR\s*ALTER)?\s*(?:PROC|PROCEDURE)\s*(?:[^\s(]+)\s*(?<inputArgs>\((?:[^()']+|'[^']*'|\([^()]*\))*\)|(?:\s*@\w+[^@]*?)*?)?\s*(?<parameters>(?:WITH\s*(?:ENCRYPTION|RECOMPILE|,\s*|EXECUTE\s*AS\s*(?:OWNER|CALLER|SELF|'[^']+'))+)(?:\s*FOR\s*REPLICATION)?)?\s*AS\s*(?<body>[\s\S]*)/im;
 
 const encryptionRegexp = /WITH[\s\S]*\b(?<value>ENCRYPTION)/i;
 const recompileRegexp = /WITH[\s\S]*\b(?<value>RECOMPILE)/i;
