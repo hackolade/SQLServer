@@ -188,16 +188,22 @@ making sure that you maintain a proper JSON format.
 						"propertyKeyword": "inputArgs",
 						"propertyTooltip": "A list of arguments' names and their data types.",
 						"propertyType": "details",
-						"template": "textarea",
-						"markdown": false
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql"
+						}
 					},
 					{
 						"propertyName": "Procedure body",
 						"propertyKeyword": "body",
 						"propertyTooltip": "Valid SQL procedure statement.",
 						"propertyType": "details",
-						"template": "textarea",
-						"markdown": false
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql"
+						}
 					},
 					{
 						"propertyName": "Encryption",

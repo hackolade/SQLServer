@@ -21,7 +21,7 @@ const hydrateProcedures = procedures => {
 				name: procedure.name || undefined,
 				orReplace: procedure.orReplace || undefined,
 				inputArgs: procedure.inputArgs ? tab(trim(procedure.inputArgs)) : undefined,
-				body: procedure.body ? tab(trim(procedure.body)) : undefined,
+				body: procedure.body || undefined,
 				description: procedure.description || undefined,
 				encryption: procedure.encryption || undefined,
 				recompile: procedure.recompile || undefined,
