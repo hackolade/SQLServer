@@ -5,6 +5,9 @@ module.exports = {
 
 	createSchema: 'CREATE SCHEMA [${name}]${terminator}${comment}',
 
+	createProcedure:
+		'CREATE${orReplace} PROCEDURE ${name}${arguments}${parameters}\nAS\n${body}${terminator}${comment}',
+
 	createTable:
 		'CREATE${external} TABLE ${name} (\n' +
 		'\t${column_definitions}${temporalTableTime}${keyConstraints}${checkConstraints}${foreignKeyConstraints}${memoryOptimizedIndexes}\n' +
@@ -101,6 +104,9 @@ module.exports = {
 
 	createColumnComment:
 		"EXEC sp_addextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}, 'table', ${tableName}, 'column', ${columnName}${terminator}",
+
+	createProcedureComment:
+		"EXEC sp_addextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}, 'procedure', ${procedureName}${terminator}",
 
 	createViewComment:
 		"EXEC sp_addextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}, 'view', ${viewName}${terminator}",

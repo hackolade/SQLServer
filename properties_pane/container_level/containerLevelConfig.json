@@ -161,5 +161,99 @@ making sure that you maintain a proper JSON format.
 			}
 		],
 		"containerLevelKeys": []
+	},
+	{
+		"lowerTab": "Procedures",
+		"structure": [
+			{
+				"propertyName": "Procedure",
+				"propertyType": "group",
+				"propertyKeyword": "Procedures",
+				"propertyTooltip": "Creates a new stored procedure or alter an existing procedure for the current schema.",
+				"structure": [
+					{
+						"propertyName": "Name",
+						"propertyKeyword": "name",
+						"propertyTooltip": "The name of the procedure.",
+						"propertyType": "text"
+					},
+					{
+						"propertyName": "Or alter",
+						"propertyKeyword": "orReplace",
+						"propertyType": "checkbox",
+						"propertyTooltip": "Specifies that if a procedure with the same name and input argument data types, or signature, as this one already exists, the existing procedure is replaced. You can only replace a procedure with a new procedure that defines an identical set of data types."
+					},
+					{
+						"propertyName": "Arguments",
+						"propertyKeyword": "inputArgs",
+						"propertyTooltip": "A list of arguments' names and their data types.",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql"
+						}
+					},
+					{
+						"propertyName": "Procedure body",
+						"propertyKeyword": "body",
+						"propertyTooltip": "Valid SQL procedure statement.",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql"
+						}
+					},
+					{
+						"propertyName": "Encryption",
+						"propertyKeyword": "encryption",
+						"propertyTooltip": "Indicates that SQL Server converts the original text of the CREATE PROCEDURE statement to an obfuscated format.",
+						"propertyType": "select",
+						"defaultValue": "",
+						"options": ["", "ENCRYPTION"]
+					},
+					{
+						"propertyName": "Recompile",
+						"propertyKeyword": "recompile",
+						"propertyTooltip": "Indicates that the Database Engine doesn't cache a query plan for this procedure, forcing it to be compiled each time it is executed.",
+						"propertyType": "select",
+						"defaultValue": "",
+						"options": ["", "RECOMPILE"]
+					},
+					{
+						"propertyName": "Execute AS",
+						"propertyKeyword": "executeAs",
+						"propertyTooltip": "Specifies the security context under which to execute the procedure.",
+						"propertyType": "details",
+						"template": "textarea",
+						"markdown": false
+					},
+					{
+						"propertyName": "For replication",
+						"propertyKeyword": "forReplication",
+						"propertyTooltip": "Specifies that the procedure is created for replication.",
+						"propertyType": "select",
+						"defaultValue": "",
+						"options": ["", "FOR REPLICATION"]
+					},
+					{
+						"propertyName": "Comments",
+						"propertyKeyword": "description",
+						"propertyType": "details",
+						"template": "textarea"
+					},
+					{
+						"propertyName": "Remarks",
+						"propertyKeyword": "comments",
+						"shouldValidate": false,
+						"propertyTooltip": "comments",
+						"addTimestampButton": false,
+						"propertyType": "details",
+						"template": "textarea"
+					}
+				]
+			}
+		]
 	}
 ]
