@@ -936,7 +936,7 @@ const getDatabaseProcedures = async ({ client, dbName, logger }) => {
 		dbName,
 		meta: {
 			action: 'getting procedures query',
-			objects: ['sys.procedures', 'sys.schemas', 'sys.sql_modules'],
+			objects: ['sys.procedures', 'sys.schemas', 'sys.sql_modules', 'sys.extended_properties'],
 			skip: true,
 		},
 		logger,
@@ -945,19 +945,26 @@ const getDatabaseProcedures = async ({ client, dbName, logger }) => {
 	logger.log('info', { message: `Get '${dbName}' database procedures.` }, 'Reverse Engineering');
 
 	const response = await currentDbConnectionClient.query(`
-			SELECT
-    				s.name AS schema_name,
-    				p.name AS procedure_name,
-    				sm.definition AS procedure_body
-			FROM sys.procedures p
-						JOIN sys.schemas s ON p.schema_id = s.schema_id
-						LEFT JOIN sys.sql_modules sm ON p.object_id = sm.object_id
-			ORDER BY s.name, p.name;
+		SELECT
+				s.name AS schema_name,
+				p.name AS procedure_name,
+				sm.definition AS procedure_body,
+				ep.value AS description
+		FROM sys.procedures p
+		JOIN sys.schemas s 
+				ON p.schema_id = s.schema_id
+		LEFT JOIN sys.sql_modules sm 
+				ON p.object_id = sm.object_id
+		LEFT JOIN sys.extended_properties ep 
+				ON ep.major_id = p.object_id
+				AND ep.minor_id = 0
+				AND ep.name = 'MS_Description'
+		ORDER BY s.name, p.name;
 		`);
 
 	const rawProcedures = await mapResponse(response);
 
-	return rawProcedures.map(parseProcedure);
+	return rawProcedures.map(parseProcedure(logger));
 };
 
 module.exports = {
