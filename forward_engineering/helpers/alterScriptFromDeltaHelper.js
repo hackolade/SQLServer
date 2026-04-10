@@ -348,8 +348,13 @@ const getCollectionsCommentsAlterScriptsDtos = (collection, app, options) => {
 };
 
 const getViewsCommentsAlterScriptsDtos = (collection, app, options) => {
-	const { getViewsDropCommentAlterScriptsDto, getViewsModifyCommentsAlterScriptsDto } =
-		require('./alterScriptHelpers/alterViewHelper')(app, options);
+	const {
+		getViewsDropCommentAlterScriptsDto,
+		getViewsModifyCommentsAlterScriptsDto,
+		getViewColumnsCreateCommentAlterScriptsDto,
+		getViewColumnsDropCommentAlterScriptsDto,
+		getViewColumnsModifyCommentAlterScriptsDto,
+	} = require('./alterScriptHelpers/alterViewHelper')(app, options);
 
 	//Added views comments creation is already done in generation of ddl
 	const modifiedViews = collection.properties?.views?.properties?.modified?.items;
@@ -357,22 +362,37 @@ const getViewsCommentsAlterScriptsDtos = (collection, app, options) => {
 
 	let addViewsModifyCommentsScriptsDtos = [];
 	let addViewsDropCommentsScriptsDtos = [];
+	let addViewColumnCreateCommentsScriptsDtos = [];
+	let addViewColumnModifyCommentsScriptsDtos = [];
+	let addViewColumnDropCommentsScriptsDtos = [];
 
 	if (modifiedViews) {
 		addViewsModifyCommentsScriptsDtos = Array.isArray(modifiedViews)
 			? modifiedViews.flatMap(schema => getViewsModifyCommentsAlterScriptsDto(schema?.properties))
 			: getViewsModifyCommentsAlterScriptsDto(modifiedViews?.properties);
+		addViewColumnCreateCommentsScriptsDtos = Array.isArray(modifiedViews)
+			? modifiedViews.flatMap(schema => getViewColumnsCreateCommentAlterScriptsDto(schema?.properties))
+			: getViewColumnsCreateCommentAlterScriptsDto(modifiedViews?.properties);
+		addViewColumnModifyCommentsScriptsDtos = Array.isArray(modifiedViews)
+			? modifiedViews.flatMap(schema => getViewColumnsModifyCommentAlterScriptsDto(schema?.properties))
+			: getViewColumnsModifyCommentAlterScriptsDto(modifiedViews?.properties);
 	}
 
 	if (deletedViews) {
 		addViewsDropCommentsScriptsDtos = Array.isArray(deletedViews)
 			? deletedViews.flatMap(schema => getViewsDropCommentAlterScriptsDto(schema?.properties))
 			: getViewsDropCommentAlterScriptsDto(deletedViews?.properties);
+		addViewColumnDropCommentsScriptsDtos = Array.isArray(deletedViews)
+			? deletedViews.flatMap(schema => getViewColumnsDropCommentAlterScriptsDto(schema?.properties))
+			: getViewColumnsDropCommentAlterScriptsDto(deletedViews?.properties);
 	}
 
 	return {
 		addViewsModifyCommentsScriptsDtos,
 		addViewsDropCommentsScriptsDtos,
+		addViewColumnCreateCommentsScriptsDtos,
+		addViewColumnModifyCommentsScriptsDtos,
+		addViewColumnDropCommentsScriptsDtos,
 	};
 };
 
@@ -445,6 +465,7 @@ const getAlterScriptDtos = (collection, app, options) => {
 	return [
 		'addContainersScriptsDtos',
 		'addViewsDropCommentsScriptsDtos',
+		'addViewColumnDropCommentsScriptsDtos',
 		'deleteViewsScriptsDtos',
 		'addColumnDropCommentsScriptsDtos',
 		'addTablesDropCommentsScriptsDtos',
@@ -465,6 +486,8 @@ const getAlterScriptDtos = (collection, app, options) => {
 		'addSchemasModifyCommentsScriptsDtos',
 		'addTablesModifyCommentsScriptsDtos',
 		'addViewsModifyCommentsScriptsDtos',
+		'addViewColumnCreateCommentsScriptsDtos',
+		'addViewColumnModifyCommentsScriptsDtos',
 		'deleteFkScriptDtos',
 		'addFkScriptDtos',
 		'modifiedFkScriptDtos',

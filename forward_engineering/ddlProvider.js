@@ -904,6 +904,20 @@ const ddlProvider = (baseProvider, options, app) => {
 			});
 		},
 
+		createViewColumnComment({ schemaName, viewName, columnName, comment, customTerminator }) {
+			if (!viewName || !columnName) {
+				return '';
+			}
+
+			return assignTemplates(templates.createViewColumnComment, {
+				value: escapeSpecialCharacters(comment),
+				schemaName: wrapInBrackets(schemaName),
+				viewName: wrapInBrackets(viewName),
+				columnName: wrapInBrackets(columnName),
+				terminator: customTerminator ?? terminator,
+			});
+		},
+
 		dropSchemaComment({ schemaName, customTerminator }) {
 			return assignTemplates(templates.dropSchemaComment, {
 				schemaName: wrapInBrackets(schemaName),
@@ -944,6 +958,19 @@ const ddlProvider = (baseProvider, options, app) => {
 			return assignTemplates(templates.dropViewComment, {
 				schemaName: wrapInBrackets(schemaName),
 				viewName: wrapInBrackets(viewName),
+				terminator: customTerminator ?? terminator,
+			});
+		},
+
+		dropViewColumnComment({ schemaName, viewName, columnName, customTerminator }) {
+			if (!schemaName || !viewName) {
+				return '';
+			}
+
+			return assignTemplates(templates.dropViewColumnComment, {
+				schemaName: wrapInBrackets(schemaName),
+				viewName: wrapInBrackets(viewName),
+				columnName: wrapInBrackets(columnName),
 				terminator: customTerminator ?? terminator,
 			});
 		},
@@ -992,6 +1019,20 @@ const ddlProvider = (baseProvider, options, app) => {
 				value: escapeSpecialCharacters(comment),
 				schemaName: wrapInBrackets(schemaName),
 				viewName: wrapInBrackets(viewName),
+				terminator: customTerminator ?? terminator,
+			});
+		},
+
+		updateViewColumnComment({ schemaName, viewName, columnName, comment, customTerminator }) {
+			if (!schemaName || !viewName) {
+				return '';
+			}
+
+			return assignTemplates(templates.updateViewColumnComment, {
+				value: escapeSpecialCharacters(comment),
+				schemaName: wrapInBrackets(schemaName),
+				viewName: wrapInBrackets(viewName),
+				columnName: wrapInBrackets(columnName),
 				terminator: customTerminator ?? terminator,
 			});
 		},
