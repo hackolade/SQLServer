@@ -111,6 +111,9 @@ module.exports = {
 	createViewComment:
 		"EXEC sp_addextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}, 'view', ${viewName}${terminator}",
 
+	createViewColumnComment:
+		"EXEC sp_addextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}, 'view', ${viewName}, 'column', ${columnName}${terminator}",
+
 	dropSchemaComment: "EXEC sp_dropextendedproperty 'MS_Description', 'schema', ${schemaName}${terminator}",
 
 	dropTableComment:
@@ -121,6 +124,9 @@ module.exports = {
 
 	dropViewComment:
 		"EXEC sp_dropextendedproperty 'MS_Description', 'schema', ${schemaName}, 'view', ${viewName}${terminator}",
+
+	dropViewColumnComment:
+		"EXEC sp_dropextendedproperty 'MS_Description', 'schema', ${schemaName}, 'view', ${viewName}, 'column', ${columnName}${terminator}",
 
 	updateSchemaComment:
 		"EXEC sp_updateextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}${terminator}",
@@ -133,4 +139,7 @@ module.exports = {
 
 	updateViewComment:
 		"EXEC sp_updateextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}, 'view', ${viewName}${terminator}",
+
+	updateViewColumnComment:
+		"EXEC sp_updateextendedproperty 'MS_Description', N'${value}', 'schema', ${schemaName}, 'view', ${viewName}, 'column', ${columnName}${terminator}",
 };

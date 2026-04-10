@@ -202,6 +202,105 @@ const alterViewHelper = (app, options) => {
 			.filter(Boolean);
 	};
 
+	const getViewColumnCreateCommentScript = ({ schemaName, viewName, columnName, comment }) =>
+		ddlProvider.createViewColumnComment({ schemaName, viewName, columnName, comment });
+	const getViewColumnUpdateCommentScript = ({ schemaName, viewName, columnName, comment }) =>
+		ddlProvider.updateViewColumnComment({ schemaName, viewName, columnName, comment });
+	const getViewColumnDropCommentScript = ({ schemaName, viewName, columnName }) =>
+		ddlProvider.dropViewColumnComment({ schemaName, viewName, columnName });
+
+	const getViewColumnsCreateCommentAlterScriptsDto = views => {
+		return Object.keys(views)
+			.flatMap(viewName => {
+				const columns = views[viewName].properties;
+				if (!columns) {
+					return [];
+				}
+				const schemaName = views[viewName].role?.compMod.keyspaceName;
+				return Object.keys(columns).map(columnName => {
+					const column = columns[columnName];
+					const isColumnRenamed = column?.compMod?.oldField?.name !== column?.compMod?.newField?.name;
+					const columnNameToSearchComment = isColumnRenamed ? column?.compMod?.oldField?.name : columnName;
+					const comment = column.refDescription;
+					const oldComment = views[viewName].role?.properties[columnNameToSearchComment]?.refDescription;
+
+					if (!comment || oldComment) {
+						return undefined;
+					}
+
+					const script = getViewColumnCreateCommentScript({ schemaName, viewName, columnName, comment });
+
+					return AlterScriptDto.getInstance([script], true, false);
+				});
+			})
+			.filter(Boolean);
+	};
+
+	const getViewColumnsDropCommentAlterScriptsDto = views => {
+		return Object.keys(views)
+			.flatMap(viewName => {
+				const columns = views[viewName].properties;
+				if (!columns) {
+					return [];
+				}
+				const schemaName = views[viewName].role?.compMod.keyspaceName;
+				return Object.keys(columns)
+					.filter(columnName => Boolean(columns[columnName].refDescription))
+					.map(columnName => {
+						const script = getViewColumnDropCommentScript({ schemaName, viewName, columnName });
+
+						return AlterScriptDto.getInstance([script], true, true);
+					});
+			})
+			.filter(Boolean);
+	};
+
+	const getViewColumnsModifyCommentAlterScriptsDto = views => {
+		return Object.keys(views)
+			.flatMap(viewName => {
+				const columns = views[viewName].properties;
+				if (!columns) {
+					return undefined;
+				}
+				const schemaName = views[viewName].role?.compMod.keyspaceName;
+				return Object.keys(columns).map(columnName => {
+					let script = '';
+					const newComment = columns[columnName]?.refDescription;
+					const oldComment = views[viewName].role?.properties[columnName]?.refDescription;
+					const isCommentRemoved = oldComment && !newComment;
+
+					if (isCommentRemoved) {
+						script = getViewColumnDropCommentScript({ schemaName, viewName, columnName });
+
+						return AlterScriptDto.getInstance([script], true, true);
+					}
+
+					if (!newComment || !oldComment || newComment === oldComment) {
+						return undefined;
+					}
+
+					if (oldComment) {
+						script = getViewColumnUpdateCommentScript({
+							schemaName,
+							viewName,
+							columnName,
+							comment: newComment,
+						});
+					} else {
+						script = getViewColumnCreateCommentScript({
+							schemaName,
+							viewName,
+							columnName,
+							comment: newComment,
+						});
+					}
+
+					return AlterScriptDto.getInstance([script], true, false);
+				});
+			})
+			.filter(Boolean);
+	};
+
 	const generateRefToNameHashTable = view => {
 		const refToNameHashTable = {};
 
@@ -228,6 +327,9 @@ const alterViewHelper = (app, options) => {
 		getModifiedViewScriptDto,
 		getViewsDropCommentAlterScriptsDto,
 		getViewsModifyCommentsAlterScriptsDto,
+		getViewColumnsCreateCommentAlterScriptsDto,
+		getViewColumnsDropCommentAlterScriptsDto,
+		getViewColumnsModifyCommentAlterScriptsDto,
 	};
 };
 

@@ -437,13 +437,23 @@
 								"exist": false
 							},
 							{
-								"key": "description",
-								"exist": true
+								"type": "or",
+								"values": [
+									{
+										"key": "description",
+										"exist": true
+									},
+									{
+										"key": "refDescription",
+										"exist": true
+									}
+								]
 							}
 						]
 					},
 					"defaultValue": {
-						"description": ""
+						"description": "",
+						"refDescription": ""
 					}
 				}
 			]
