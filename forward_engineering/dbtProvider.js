@@ -80,6 +80,17 @@ class DbtProvider {
 	getColumnConstraints({ columnDefinition, jsonSchema }) {
 		return getColumnConstraints({ columnDefinition });
 	}
+
+	/**
+	 * @param {{ modelData: object[]; containerData: object[]; entityData: object[];}}
+	 * @returns {{ databaseName?: string, schemaName?: string }}
+	 */
+	getEntityProperties({ modelData, containerData, entityData }) {
+		return {
+			databaseName: containerData?.[0]?.databaseName,
+			schemaName: containerData?.[0]?.code ?? containerData?.[0]?.name,
+		};
+	}
 }
 
 module.exports = DbtProvider;
