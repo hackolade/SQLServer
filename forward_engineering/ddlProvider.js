@@ -567,7 +567,7 @@ const ddlProvider = (baseProvider, options, app) => {
 			};
 		},
 
-		hydrateSchema(containerData, { procedures, modelData } = {}) {
+		hydrateSchema(containerData, { procedures, modelData = [] } = {}) {
 			return {
 				schemaName: containerData.name,
 				databaseName: containerData.databaseName,
