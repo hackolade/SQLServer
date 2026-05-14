@@ -16,7 +16,7 @@ const alterUdtHelper = (app, options) => {
 		const schemaNames = getSchemaNames(jsonSchema);
 
 		return Object.keys(schemaNames).map(schemaName => {
-			const schemaData = { schemaName };
+			const schemaData = { schemaName, dbVersion: options.dbVersion };
 
 			const udt = createColumnDefinitionBySchema({
 				name: jsonSchema.code || jsonSchema.name,

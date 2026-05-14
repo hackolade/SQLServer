@@ -6,9 +6,9 @@ const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 /**
  * @return {(collection: Collection) => AlterScriptDto[]}
  * */
-const getModifyNonNullColumnsScriptDtos = ddlProvider => (collection, collectionSchema, schemaName) => {
+const getModifyNonNullColumnsScriptDtos = ddlProvider => (collection, collectionSchema, schemaName, dbVersion) => {
 	const fullTableName = getFullTableName(collection);
-	const schemaData = { schemaName };
+	const schemaData = { schemaName, dbVersion };
 
 	const currentRequiredColumnNames = collection.required || [];
 	const previousRequiredColumnNames = collection.role.required || [];

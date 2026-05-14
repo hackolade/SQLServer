@@ -33,8 +33,9 @@ const alterComputedColumnHelper = ddlProvider => {
 		schemaName,
 		toAddNotNull,
 		toRemoveNotNull,
+		dbVersion,
 	}) => {
-		const schemaData = { schemaName };
+		const schemaData = { schemaName, dbVersion };
 		const columnDefinition = createColumnDefinitionBySchema({
 			name: columnName,
 			jsonSchema,
@@ -65,7 +66,7 @@ const alterComputedColumnHelper = ddlProvider => {
 		return sqlScripts;
 	};
 
-	const getChangedComputedColumnsScriptsDto = ({ collection, fullName, collectionSchema, schemaName }) => {
+	const getChangedComputedColumnsScriptsDto = ({ collection, fullName, collectionSchema, schemaName, dbVersion }) => {
 		return _.toPairs(collection.properties)
 			.reduce((result, [columnName, jsonSchema]) => {
 				const oldJsonSchema = _.omit(collection.role?.properties?.[columnName], ['compMod']);
@@ -90,6 +91,7 @@ const alterComputedColumnHelper = ddlProvider => {
 						schemaName,
 						toAddNotNull,
 						toRemoveNotNull,
+						dbVersion,
 					}),
 				);
 

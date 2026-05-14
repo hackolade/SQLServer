@@ -11,6 +11,7 @@ const alterContainerHelper = (app, options) => {
 			udfs: containerData.role?.UDFs,
 			procedures: containerData.role?.Procedures,
 			useDb: false,
+			modelData: [{ dbVersion: options.dbVersion }],
 		});
 
 		return AlterScriptDto.getInstance([_.trim(ddlProvider.createSchema(schemaData))], true, false);

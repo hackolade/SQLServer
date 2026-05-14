@@ -14,7 +14,7 @@ const alterEntityHelper = (app, options) => {
 	const { getRenameColumnScriptsDto } = require('./columnHelpers/renameColumnHelpers')(ddlProvider);
 	const { getDefaultValueChangeDto } = require('./columnHelpers/defaultValueColumnHelper')(ddlProvider);
 	const { getChangedComputedColumnsScriptsDto } = require('./columnHelpers/alterComputedColumnHelper')(ddlProvider);
-	const { getChangeTypeScriptsDto } = require('./columnHelpers/alterTypeHelper')(ddlProvider);
+	const { getChangeTypeScriptsDto } = require('./columnHelpers/alterTypeHelper')(ddlProvider, options);
 	const { getModifyCheckConstraintScriptDtos } = require('./entityHelpers/checkConstraintHelper');
 	const { getModifyPkConstraintsScriptDtos } = require('./entityHelpers/primaryKeyHelper');
 	const { getModifyNonNullColumnsScriptDtos } = require('./columnHelpers/notNullConstraintsHelper');
@@ -28,7 +28,7 @@ const alterEntityHelper = (app, options) => {
 	const getAddCollectionScriptDto = (collection, inlineDeltaRelationships) => {
 		//done but need clean up
 		const schemaName = collection.compMod.keyspaceName;
-		const schemaData = { schemaName };
+		const schemaData = { schemaName, dbVersion: options.dbVersion };
 		const jsonSchema = { ...collection, ...collection?.role };
 		const tableName = getEntityName(jsonSchema);
 		const idToNameHashTable = generateIdToNameHashTable(jsonSchema);
@@ -116,7 +116,7 @@ const alterEntityHelper = (app, options) => {
 	const getModifyCollectionScriptDto = collection => {
 		const jsonSchema = { ...collection, ...collection?.role };
 		const schemaName = collection.compMod?.keyspaceName;
-		const schemaData = { schemaName };
+		const schemaData = { schemaName, dbVersion: options.dbVersion };
 		const idToNameHashTable = generateIdToNameHashTable(jsonSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(jsonSchema);
 		const modifyCheckConstraintScriptDtos = getModifyCheckConstraintScriptDtos(ddlProvider)(collection);
@@ -160,7 +160,7 @@ const alterEntityHelper = (app, options) => {
 		const tableName = collectionSchema?.code || collectionSchema?.collectionName || collectionSchema?.name;
 		const schemaName = collectionSchema.compMod?.keyspaceName;
 		const fullName = getTableName(tableName, schemaName);
-		const schemaData = { schemaName };
+		const schemaData = { schemaName, dbVersion: options.dbVersion };
 
 		return _.toPairs(collection.properties)
 			.filter(([name, jsonSchema]) => !jsonSchema.compMod)
@@ -221,6 +221,7 @@ const alterEntityHelper = (app, options) => {
 			collection,
 			collectionSchema,
 			schemaName,
+			options.dbVersion,
 		);
 		const modifiedDefaultValues = getDefaultValueChangeDto(collection, fullName);
 		const changedComputedScriptsDtos = getChangedComputedColumnsScriptsDto({
@@ -228,6 +229,7 @@ const alterEntityHelper = (app, options) => {
 			fullName,
 			collectionSchema,
 			schemaName,
+			dbVersion: options.dbVersion,
 		});
 
 		return [

@@ -75,7 +75,7 @@ const parseDataForEntityLevelScript = data => {
 const getEntityLevelAlterScriptDtos =
 	(data, app) =>
 	({ jsonSchema }) => {
-		return getAlterScriptDtos(jsonSchema, app, data.options);
+		return getAlterScriptDtos(jsonSchema, app, { ...data.options, dbVersion: data.modelData[0]?.dbVersion });
 	};
 
 /**

@@ -3,9 +3,9 @@ const { AlterScriptDto } = require('../types/AlterScriptDto');
 const { checkFieldPropertiesChanged } = require('../common');
 const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 
-const alterTypeHelper = ddlProvider => {
+const alterTypeHelper = (ddlProvider, options) => {
 	const getChangeTypeScriptsDto = (collectionProperties, fullName, collectionSchema, schemaName) => {
-		const schemaData = { schemaName };
+		const schemaData = { schemaName, dbVersion: options.dbVersion };
 
 		return _.toPairs(collectionProperties)
 			.filter(([name, jsonSchema]) => checkFieldPropertiesChanged(jsonSchema.compMod, ['type', 'mode']))

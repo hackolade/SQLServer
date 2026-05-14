@@ -14,7 +14,7 @@ const alterViewHelper = (app, options) => {
 		const viewSchema = { ...view, ...view.role };
 		const idToNameHashTable = generateRefToNameHashTable(viewSchema);
 		const idToActivatedHashTable = generateRefToActivatedHashTable(viewSchema);
-		const schemaData = { schemaName: viewSchema.compMod.keyspaceName };
+		const schemaData = { schemaName: viewSchema.compMod.keyspaceName, dbVersion: options.dbVersion };
 
 		const viewData = {
 			name: viewSchema.code || viewSchema.name,
@@ -45,7 +45,7 @@ const alterViewHelper = (app, options) => {
 		const viewSchema = { ...view, ...view.role };
 		const idToNameHashTable = generateIdToNameHashTable(viewSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(viewSchema);
-		const schemaData = { schemaName: viewSchema.compMod.keyspaceName };
+		const schemaData = { schemaName: viewSchema.compMod.keyspaceName, dbVersion: options.dbVersion };
 		const viewData = {
 			name: viewSchema.code || viewSchema.name,
 			keys: getKeys(viewSchema, viewSchema.compMod?.collectionData?.collectionRefsDefinitionsMap ?? {}),
