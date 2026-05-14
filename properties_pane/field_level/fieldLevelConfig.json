@@ -417,7 +417,8 @@ making sure that you maintain a proper JSON format.
 					{
 						"propertyName": "Key name",
 						"propertyKeyword": "COLUMN_ENCRYPTION_KEY",
-						"propertyType": "text"
+						"propertyType": "text",
+						"requiredProperty": "true"
 					},
 					{
 						"propertyName": "Type",
@@ -425,12 +426,39 @@ making sure that you maintain a proper JSON format.
 						"propertyType": "select",
 						"options": ["DETERMINISTIC", "RANDOMIZED"],
 						"data": "options",
-						"valueType": "string"
+						"valueType": "string",
+						"requiredProperty": "true"
 					},
 					{
 						"propertyName": "Algorithm",
 						"propertyKeyword": "ENCRYPTION_ALGORITHM",
-						"propertyType": "text"
+						"propertyType": "text",
+						"requiredProperty": "true",
+						"defaultValue": "AEAD_AES_256_CBC_HMAC_SHA_256",
+						"cleanDependency": true,
+						"dependency": {
+							"type": "not",
+							"values": {
+								"type": "or",
+								"values": [
+									{
+										"level": "model",
+										"key": "dbVersion",
+										"value": "2008"
+									},
+									{
+										"level": "model",
+										"key": "dbVersion",
+										"value": "2012"
+									},
+									{
+										"level": "model",
+										"key": "dbVersion",
+										"value": "2014"
+									}
+								]
+							}
+						}
 					}
 				]
 			},

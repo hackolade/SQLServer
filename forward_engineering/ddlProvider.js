@@ -208,32 +208,41 @@ const ddlProvider = (baseProvider, options, app) => {
 		},
 
 		convertColumnDefinition(columnDefinition) {
+			const { name, persisted, computed, computedExpression, dbVersion } = columnDefinition;
+
 			const type = hasType(columnDefinition.type)
 				? _.toUpper(columnDefinition.type)
 				: getTableName(columnDefinition.type, columnDefinition.schemaName);
+
 			const notNull = columnDefinition.nullable ? '' : ' NOT NULL';
+
 			const primaryKey = columnDefinition.primaryKey
 				? ' ' + createPKConstraint(templates, terminator, true)(columnDefinition.primaryKeyOptions).statement
 				: '';
+
 			const defaultValue = getDefaultValue(columnDefinition.defaultConstraint, type);
+
 			const sparse = columnDefinition.sparse ? ' SPARSE' : '';
+
 			const maskedWithFunction = columnDefinition.maskedWithFunction
 				? ` MASKED WITH (FUNCTION='${columnDefinition.maskedWithFunction}')`
 				: '';
+
 			const identityContainer = columnDefinition.identity && { identity: getIdentity(columnDefinition.identity) };
+
 			const encryptedWith = _.isEmpty(columnDefinition.encryption)
 				? ''
-				: getEncryptedWith(columnDefinition.encryption[0]);
+				: getEncryptedWith({ encryption: columnDefinition.encryption[0], dbVersion });
+
 			const unique = columnDefinition.unique
 				? ' ' + createUKConstraint(templates, terminator, true)(columnDefinition.uniqueKeyOptions).statement
 				: '';
+
 			const temporalTableTime = getTempTableTime(
 				columnDefinition.isTempTableStartTimeColumn,
 				columnDefinition.isTempTableEndTimeColumn,
 				columnDefinition.isHidden,
 			);
-
-			const { name, persisted, computed, computedExpression } = columnDefinition;
 
 			const statement =
 				computed && computedExpression
@@ -529,6 +538,7 @@ const ddlProvider = (baseProvider, options, app) => {
 						increment: Number(_.get(jsonSchema, 'identity.identityIncrement', 0)),
 					},
 				}),
+				dbVersion: schemaData.dbVersion,
 			};
 		},
 
@@ -557,7 +567,7 @@ const ddlProvider = (baseProvider, options, app) => {
 			};
 		},
 
-		hydrateSchema(containerData, { procedures } = {}) {
+		hydrateSchema(containerData, { procedures, modelData = [] } = {}) {
 			return {
 				schemaName: containerData.name,
 				databaseName: containerData.databaseName,
@@ -565,6 +575,7 @@ const ddlProvider = (baseProvider, options, app) => {
 				comment: containerData.role?.description ?? containerData.description,
 				isActivated: containerData.isActivated,
 				procedures: hydrateProcedures(procedures),
+				dbVersion: modelData[0]?.dbVersion,
 			};
 		},
 

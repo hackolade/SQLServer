@@ -96,20 +96,33 @@ const addClustered = (statement, columnDefinition) => {
 	return statement + ' CLUSTERED';
 };
 
-const getEncryptedWith = encryption => {
-	return (
-		' ENCRYPTED WITH (\n' +
-		'\t\tCOLUMN_ENCRYPTION_KEY=' +
-		encryption.key +
-		',\n' +
-		'\t\tENCRYPTION_TYPE=' +
-		encryption.type +
-		',\n' +
-		"\t\tALGORITHM='" +
-		encryption.algorithm +
-		"'\n" +
-		'\t)'
-	);
+const getEncryptedWith = ({ encryption, dbVersion }) => {
+	const { key, type, algorithm } = encryption;
+
+	if (!key || !type) {
+		return '';
+	}
+
+	// must be in sync with ENCRYPTION_ALGORITHM dependency of fieldLevelConfig
+	const noAlgorithmDbVersions = ['2008', '2012', '2014'];
+	const hasAlgorithm = !noAlgorithmDbVersions.includes(dbVersion);
+
+	if (hasAlgorithm && !algorithm) {
+		return '';
+	}
+
+	const blockIndentation = '\n\t\t';
+
+	let script = ` ENCRYPTED WITH (`;
+
+	script += `${blockIndentation}COLUMN_ENCRYPTION_KEY=${key}`;
+	script += `,${blockIndentation}ENCRYPTION_TYPE=${type}`;
+
+	if (hasAlgorithm) {
+		script += `,${blockIndentation}ALGORITHM='${algorithm}'`;
+	}
+
+	return `${script}\n\t)`;
 };
 
 const getColumnsComments = (tableName, terminator, columnDefinitions) => {
