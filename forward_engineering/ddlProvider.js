@@ -538,7 +538,7 @@ const ddlProvider = (baseProvider, options, app) => {
 						increment: Number(_.get(jsonSchema, 'identity.identityIncrement', 0)),
 					},
 				}),
-				dbVersion: options.dbVersion,
+				dbVersion: schemaData.dbVersion,
 			};
 		},
 
@@ -567,7 +567,7 @@ const ddlProvider = (baseProvider, options, app) => {
 			};
 		},
 
-		hydrateSchema(containerData, { procedures } = {}) {
+		hydrateSchema(containerData, { procedures, modelData } = {}) {
 			return {
 				schemaName: containerData.name,
 				databaseName: containerData.databaseName,
@@ -575,6 +575,7 @@ const ddlProvider = (baseProvider, options, app) => {
 				comment: containerData.role?.description ?? containerData.description,
 				isActivated: containerData.isActivated,
 				procedures: hydrateProcedures(procedures),
+				dbVersion: modelData[0]?.dbVersion,
 			};
 		},
 
