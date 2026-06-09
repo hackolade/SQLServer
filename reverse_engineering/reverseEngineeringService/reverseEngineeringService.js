@@ -288,28 +288,35 @@ const addTotalBucketCountToDatabaseIndexes = ({ databaseIndexes, indexesBucketCo
 const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => {
 	const allUniqueSchemasAndTables = getAllUniqueSchemasAndTables({ tablesInfo });
 
-	const [
-		rawDatabaseIndexes,
-		databaseMemoryOptimizedTables,
-		databaseCheckConstraints,
-		xmlSchemaCollections,
-		databaseUDT,
-		viewsIndexes,
-		fullTextIndexes,
-		spatialIndexes,
-		procedures,
-	] = await Promise.all([
-		getDatabaseIndexes({ client, dbName, tablesInfo, logger }),
-		getDatabaseMemoryOptimizedTables({ client, dbName, logger }),
-		getDatabaseCheckConstraints({ client, dbName, allUniqueSchemasAndTables, logger }),
-		getDatabaseXmlSchemaCollection({ client, dbName, allUniqueSchemasAndTables, logger }),
-		getDatabaseUserDefinedTypes({ client, dbName, logger }),
-		getViewsIndexes({ client, dbName, logger }),
-		getFullTextIndexes({ client, dbName, allUniqueSchemasAndTables, logger }),
-		getSpatialIndexes({ client, dbName, allUniqueSchemasAndTables, logger }),
-		getDatabaseProcedures({ client, dbName, logger }),
-	]);
-
+	const rawDatabaseIndexes = await getDatabaseIndexes({ client, dbName, tablesInfo, logger });
+	const databaseCheckConstraints = await getDatabaseCheckConstraints({
+		client,
+		dbName,
+		allUniqueSchemasAndTables,
+		logger,
+	});
+	const viewsIndexes = await getViewsIndexes({ client, dbName, logger });
+	const databaseMemoryOptimizedTables = await getDatabaseMemoryOptimizedTables({ client, dbName, logger });
+	const xmlSchemaCollections = await getDatabaseXmlSchemaCollection({
+		client,
+		dbName,
+		allUniqueSchemasAndTables,
+		logger,
+	});
+	const databaseUDT = await getDatabaseUserDefinedTypes({ client, dbName, logger });
+	const fullTextIndexes = await getFullTextIndexes({
+		client,
+		dbName,
+		allUniqueSchemasAndTables,
+		logger,
+	});
+	const spatialIndexes = await getSpatialIndexes({
+		client,
+		dbName,
+		allUniqueSchemasAndTables,
+		logger,
+	});
+	const procedures = await getDatabaseProcedures({ client, dbName, logger });
 	const indexesBucketCount = await getIndexesBucketCount({
 		client,
 		dbName,

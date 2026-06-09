@@ -33,7 +33,11 @@ const getClient = async ({ client, dbName, meta, logger }) => {
 		},
 		async query(...queryParams) {
 			try {
-				return await currentDbConnectionClient.query(...queryParams);
+				const result = await currentDbConnectionClient.query(...queryParams);
+				if (meta.action) {
+					logger.log('info', { action: meta?.action }, 'Query finished');
+				}
+				return result;
 			} catch (error) {
 				if (meta) {
 					if (error.number === PERMISSION_DENIED_CODE) {
@@ -314,6 +318,8 @@ const getIndexesBucketCount = async ({ client, dbName, indexesId, logger }) => {
 		},
 		logger,
 	});
+
+	logger.log('info', { message: `Get '${dbName}' database indexes bucket count.` }, 'Reverse Engineering');
 
 	return mapResponse(
 		await currentDbConnectionClient.query(`
@@ -791,10 +797,8 @@ const getDatabaseXmlSchemaCollection = async ({ client, dbName, allUniqueSchemas
 
 	logger.log('info', { message: `Get '${dbName}' database xml schema collection.` }, 'Reverse Engineering');
 
-	const schemaAlias = 'xsc';
 	const tableAlias = 'xcu';
 	const whereClauseParts = getWhereClauseForUniqueSchemasAndTables({
-		schemaAlias,
 		tableAlias,
 		allUniqueSchemasAndTables,
 	});
@@ -922,12 +926,8 @@ const buildDescriptionCommentsRetrieveQuery = ({ schema, entity }) => {
 	return `SELECT objtype, objname, value FROM fn_listextendedproperty ('MS_Description', ${schemaTemplate}, ${entityTemplate});`;
 };
 
-const getWhereClauseForUniqueSchemasAndTables = ({
-	schemaAlias,
-	tableAlias,
-	allUniqueSchemasAndTables: { schemas, tables },
-}) =>
-	`OBJECT_SCHEMA_NAME(${schemaAlias || tableAlias}.object_id) IN (${[...schemas].join(', ')})
+const getWhereClauseForUniqueSchemasAndTables = ({ tableAlias, allUniqueSchemasAndTables: { schemas, tables } }) =>
+	`OBJECT_SCHEMA_NAME(${tableAlias}.object_id) IN (${[...schemas].join(', ')})
 	AND OBJECT_NAME(${tableAlias}.object_id) IN (${[...tables].join(', ')})`;
 
 const getDatabaseProcedures = async ({ client, dbName, logger }) => {
@@ -951,11 +951,11 @@ const getDatabaseProcedures = async ({ client, dbName, logger }) => {
 				sm.definition AS procedure_body,
 				ep.value AS description
 		FROM sys.procedures p
-		JOIN sys.schemas s 
+		JOIN sys.schemas s
 				ON p.schema_id = s.schema_id
-		LEFT JOIN sys.sql_modules sm 
+		LEFT JOIN sys.sql_modules sm
 				ON p.object_id = sm.object_id
-		LEFT JOIN sys.extended_properties ep 
+		LEFT JOIN sys.extended_properties ep
 				ON ep.major_id = p.object_id
 				AND ep.minor_id = 0
 				AND ep.name = 'MS_Description'
