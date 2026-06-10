@@ -9,6 +9,15 @@ const { parseProcedure } = require('../helpers/parsers/parseProcedure');
 
 const PERMISSION_DENIED_CODE = 297;
 
+const normalizeQueryForLogging = queryParams =>
+	queryParams.map(param => {
+		if (typeof param === 'string') {
+			return param.replace(/\t/g, ' ');
+		}
+
+		return param;
+	});
+
 const addPermissionDeniedMetaData = ({ error, meta }) => {
 	error.message =
 		'The user does not have permission to perform ' +
@@ -33,7 +42,12 @@ const getClient = async ({ client, dbName, meta, logger }) => {
 		},
 		async query(...queryParams) {
 			try {
-				return await currentDbConnectionClient.query(...queryParams);
+				logger.log('info', { query: normalizeQueryForLogging(queryParams) }, 'Performing query');
+				const start = Date.now();
+				const result = await currentDbConnectionClient.query(...queryParams);
+				const duration = Date.now() - start;
+				logger.log('info', { 'action': meta.action, duration: `${duration}ms` }, 'Query executed');
+				return result;
 			} catch (error) {
 				if (meta) {
 					if (error.number === PERMISSION_DENIED_CODE) {
@@ -265,6 +279,7 @@ const getDatabaseIndexes = async ({ client, dbName, tablesInfo, logger }) => {
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database indexes.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering table index metadata', containerName: dbName, entityName: '' });
 
 	const tableAlias = 't';
 	const leftJoinClauseParts = Object.entries(tablesInfo).map(([schemaName, tableNames]) => {
@@ -315,6 +330,8 @@ const getIndexesBucketCount = async ({ client, dbName, indexesId, logger }) => {
 		logger,
 	});
 
+	logger.log('info', { message: `Get '${dbName}' database indexes bucket count.` }, 'Reverse Engineering');
+
 	return mapResponse(
 		await currentDbConnectionClient.query(`
 			SELECT hs.total_bucket_count, hs.index_id
@@ -343,6 +360,7 @@ const getSpatialIndexes = async ({ client, dbName, allUniqueSchemasAndTables, lo
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database spatial indexes.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering spatial index metadata', containerName: dbName, entityName: '' });
 
 	const tableAlias = 't';
 	const whereClauseParts = getWhereClauseForUniqueSchemasAndTables({ tableAlias, allUniqueSchemasAndTables });
@@ -400,6 +418,7 @@ const getFullTextIndexes = async ({ client, dbName, allUniqueSchemasAndTables, l
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database full text indexes.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering full-text index metadata', containerName: dbName, entityName: '' });
 
 	const tableAlias = 'F';
 	const whereClauseParts = getWhereClauseForUniqueSchemasAndTables({ tableAlias, allUniqueSchemasAndTables });
@@ -458,6 +477,7 @@ const getViewsIndexes = async ({ client, dbName, logger }) => {
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database views indexes.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering view index metadata', containerName: dbName, entityName: '' });
 
 	const tableAlias = 'ind';
 
@@ -536,7 +556,47 @@ const getDatabaseMemoryOptimizedTables = async ({ client, dbName, logger }) => {
 		logger,
 	});
 
-	logger.log('info', { message: `Get '${dbName}' database memory optimized indexes.` }, 'Reverse Engineering');
+	logger.log(
+		'info',
+		{ message: `Detecting  if '${dbName}' database supports memory optimized tables.` },
+		'Reverse Engineering',
+	);
+	logger.progress({ message: 'Discovering memory-optimized table metadata', containerName: dbName, entityName: '' });
+
+	const { isMemoryOptimizedTableSupported, isHistoryTableSupported } = await getSysTablesCatalogCapabilities({
+		client,
+		dbName,
+	});
+
+	if (!isMemoryOptimizedTableSupported) {
+		logger.log(
+			'info',
+			{ message: `Memory optimized tables are not supported in '${dbName}' database.` },
+			'Reverse Engineering',
+		);
+		return [];
+	}
+
+	if (isHistoryTableSupported) {
+		return mapResponse(
+			await currentDbConnectionClient.query`
+				SELECT
+					T.name,
+					T.durability,
+					T.durability_desc,
+					OBJECT_NAME(T.history_table_id) AS history_table,
+					SCHEMA_NAME(O.schema_id) AS history_schema,
+					T.temporal_type_desc,
+					T.is_memory_optimized
+				FROM sys.tables T
+				LEFT JOIN sys.objects O
+					ON T.history_table_id = O.object_id
+				WHERE T.is_memory_optimized = 1
+			`,
+		);
+	}
+
+	logger.log('info', { message: `History tables are not supported in '${dbName}' database.` }, 'Reverse Engineering');
 
 	return mapResponse(
 		await currentDbConnectionClient.query`
@@ -544,13 +604,8 @@ const getDatabaseMemoryOptimizedTables = async ({ client, dbName, logger }) => {
 				T.name,
 				T.durability,
 				T.durability_desc,
-				OBJECT_NAME(T.history_table_id) AS history_table,
-				SCHEMA_NAME(O.schema_id) AS history_schema,
-				T.temporal_type_desc,
 				T.is_memory_optimized
 			FROM sys.tables T
-			LEFT JOIN sys.objects O
-				ON T.history_table_id = O.object_id
 			WHERE T.is_memory_optimized = 1
 		`,
 	);
@@ -569,6 +624,7 @@ const getDatabaseCheckConstraints = async ({ client, dbName, allUniqueSchemasAnd
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database check constraints.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering check constraint metadata', containerName: dbName, entityName: '' });
 
 	const tableAlias = 't';
 	const whereClauseParts = getWhereClauseForUniqueSchemasAndTables({ tableAlias, allUniqueSchemasAndTables });
@@ -790,11 +846,10 @@ const getDatabaseXmlSchemaCollection = async ({ client, dbName, allUniqueSchemas
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database xml schema collection.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering XML schema collection metadata', containerName: dbName, entityName: '' });
 
-	const schemaAlias = 'xsc';
 	const tableAlias = 'xcu';
 	const whereClauseParts = getWhereClauseForUniqueSchemasAndTables({
-		schemaAlias,
 		tableAlias,
 		allUniqueSchemasAndTables,
 	});
@@ -860,6 +915,7 @@ const getDatabaseUserDefinedTypes = async ({ client, dbName, logger }) => {
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database UDTs.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering user-defined type metadata', containerName: dbName, entityName: '' });
 
 	return mapResponse(currentDbConnectionClient.query`
 		SELECT * FROM sys.types
@@ -887,6 +943,24 @@ const getDatabaseCollationOption = async ({ client, dbName, logger }) => {
 const mapResponse = async (response = Promise.resolve({})) => {
 	const resp = await response;
 	return resp.recordset ? resp.recordset : resp;
+};
+
+const getSysTablesCatalogCapabilities = async ({ client, dbName }) => {
+	const connectionClient = await getNewConnectionClientByDb(client, dbName);
+	const [{ Has_HistoryTableId, Has_IsMemoryOptimized } = {}] = await mapResponse(
+		connectionClient.query(`
+			SELECT
+				COUNT(CASE WHEN name = 'history_table_id' THEN 1 END) AS Has_HistoryTableId,
+				COUNT(CASE WHEN name = 'is_memory_optimized' THEN 1 END) AS Has_IsMemoryOptimized
+			FROM sys.all_columns
+			WHERE object_id = OBJECT_ID('sys.tables')
+		`),
+	);
+
+	return {
+		isHistoryTableSupported: Boolean(Has_HistoryTableId),
+		isMemoryOptimizedTableSupported: Boolean(Has_IsMemoryOptimized),
+	};
 };
 
 const getDescriptionComments = async ({ client, dbName, schema, entity, logger }) => {
@@ -922,12 +996,8 @@ const buildDescriptionCommentsRetrieveQuery = ({ schema, entity }) => {
 	return `SELECT objtype, objname, value FROM fn_listextendedproperty ('MS_Description', ${schemaTemplate}, ${entityTemplate});`;
 };
 
-const getWhereClauseForUniqueSchemasAndTables = ({
-	schemaAlias,
-	tableAlias,
-	allUniqueSchemasAndTables: { schemas, tables },
-}) =>
-	`OBJECT_SCHEMA_NAME(${schemaAlias || tableAlias}.object_id) IN (${[...schemas].join(', ')})
+const getWhereClauseForUniqueSchemasAndTables = ({ tableAlias, allUniqueSchemasAndTables: { schemas, tables } }) =>
+	`OBJECT_SCHEMA_NAME(${tableAlias}.object_id) IN (${[...schemas].join(', ')})
 	AND OBJECT_NAME(${tableAlias}.object_id) IN (${[...tables].join(', ')})`;
 
 const getDatabaseProcedures = async ({ client, dbName, logger }) => {
@@ -943,6 +1013,7 @@ const getDatabaseProcedures = async ({ client, dbName, logger }) => {
 	});
 
 	logger.log('info', { message: `Get '${dbName}' database procedures.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Discovering stored procedure metadata', containerName: dbName, entityName: '' });
 
 	const response = await currentDbConnectionClient.query(`
 		SELECT
@@ -951,11 +1022,11 @@ const getDatabaseProcedures = async ({ client, dbName, logger }) => {
 				sm.definition AS procedure_body,
 				ep.value AS description
 		FROM sys.procedures p
-		JOIN sys.schemas s 
+		JOIN sys.schemas s
 				ON p.schema_id = s.schema_id
-		LEFT JOIN sys.sql_modules sm 
+		LEFT JOIN sys.sql_modules sm
 				ON p.object_id = sm.object_id
-		LEFT JOIN sys.extended_properties ep 
+		LEFT JOIN sys.extended_properties ep
 				ON ep.major_id = p.object_id
 				AND ep.minor_id = 0
 				AND ep.name = 'MS_Description'
