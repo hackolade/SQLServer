@@ -9,6 +9,15 @@ const { parseProcedure } = require('../helpers/parsers/parseProcedure');
 
 const PERMISSION_DENIED_CODE = 297;
 
+const normalizeQueryForLogging = queryParams =>
+	queryParams.map(param => {
+		if (typeof param === 'string') {
+			return param.replace(/\t/g, '');
+		}
+
+		return param;
+	});
+
 const addPermissionDeniedMetaData = ({ error, meta }) => {
 	error.message =
 		'The user does not have permission to perform ' +
@@ -33,11 +42,11 @@ const getClient = async ({ client, dbName, meta, logger }) => {
 		},
 		async query(...queryParams) {
 			try {
-				logger.log('info', { query: queryParams }, 'Performing query');
+				logger.log('info', { query: normalizeQueryForLogging(queryParams) }, 'Performing query');
 				const start = Date.now();
 				const result = await currentDbConnectionClient.query(...queryParams);
 				const duration = Date.now() - start;
-				logger.log('info', { 'action': meta.action, duration: `$${duration}ms` }, 'Query executed');
+				logger.log('info', { 'action': meta.action, duration: `${duration}ms` }, 'Query executed');
 				return result;
 			} catch (error) {
 				if (meta) {
