@@ -12,7 +12,7 @@ const PERMISSION_DENIED_CODE = 297;
 const normalizeQueryForLogging = queryParams =>
 	queryParams.map(param => {
 		if (typeof param === 'string') {
-			return param.replace(/\t/g, '');
+			return param.replace(/\t/g, ' ');
 		}
 
 		return param;
