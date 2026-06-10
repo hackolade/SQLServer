@@ -296,14 +296,6 @@ const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => 
 		logger,
 	});
 	const viewsIndexes = await getViewsIndexes({ client, dbName, logger });
-	const databaseMemoryOptimizedTables = await getDatabaseMemoryOptimizedTables({ client, dbName, logger });
-	const xmlSchemaCollections = await getDatabaseXmlSchemaCollection({
-		client,
-		dbName,
-		allUniqueSchemasAndTables,
-		logger,
-	});
-	const databaseUDT = await getDatabaseUserDefinedTypes({ client, dbName, logger });
 	const fullTextIndexes = await getFullTextIndexes({
 		client,
 		dbName,
@@ -321,6 +313,14 @@ const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => 
 		client,
 		dbName,
 		indexesId: rawDatabaseIndexes.map(i => i.index_id),
+		logger,
+	});
+	const databaseUDT = await getDatabaseUserDefinedTypes({ client, dbName, logger });
+	const databaseMemoryOptimizedTables = await getDatabaseMemoryOptimizedTables({ client, dbName, logger });
+	const xmlSchemaCollections = await getDatabaseXmlSchemaCollection({
+		client,
+		dbName,
+		allUniqueSchemasAndTables,
 		logger,
 	});
 
