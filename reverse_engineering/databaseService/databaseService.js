@@ -34,8 +34,8 @@ const getClient = async ({ client, dbName, meta, logger }) => {
 		async query(...queryParams) {
 			try {
 				const result = await currentDbConnectionClient.query(...queryParams);
-				if (meta.action) {
-					logger.log('info', { action: meta?.action }, 'Query finished');
+				if (meta?.action) {
+					logger.log('info', { action: meta.action }, 'Query finished');
 				}
 				return result;
 			} catch (error) {
@@ -544,19 +544,42 @@ const getDatabaseMemoryOptimizedTables = async ({ client, dbName, logger }) => {
 
 	logger.log('info', { message: `Get '${dbName}' database memory optimized indexes.` }, 'Reverse Engineering');
 
+	const { isMemoryOptimizedTableSupported, isHistoryTableSupported } = await getSysTablesCatalogCapabilities({
+		client,
+		dbName,
+	});
+
+	if (!isMemoryOptimizedTableSupported) {
+		return [];
+	}
+
+	if (isHistoryTableSupported) {
+		return mapResponse(
+			await currentDbConnectionClient.query`
+				SELECT
+					T.name,
+					T.durability,
+					T.durability_desc,
+					OBJECT_NAME(T.history_table_id) AS history_table,
+					SCHEMA_NAME(O.schema_id) AS history_schema,
+					T.temporal_type_desc,
+					T.is_memory_optimized
+				FROM sys.tables T
+				LEFT JOIN sys.objects O
+					ON T.history_table_id = O.object_id
+				WHERE T.is_memory_optimized = 1
+			`,
+		);
+	}
+
 	return mapResponse(
 		await currentDbConnectionClient.query`
 			SELECT
 				T.name,
 				T.durability,
 				T.durability_desc,
-				OBJECT_NAME(T.history_table_id) AS history_table,
-				SCHEMA_NAME(O.schema_id) AS history_schema,
-				T.temporal_type_desc,
 				T.is_memory_optimized
 			FROM sys.tables T
-			LEFT JOIN sys.objects O
-				ON T.history_table_id = O.object_id
 			WHERE T.is_memory_optimized = 1
 		`,
 	);
@@ -891,6 +914,24 @@ const getDatabaseCollationOption = async ({ client, dbName, logger }) => {
 const mapResponse = async (response = Promise.resolve({})) => {
 	const resp = await response;
 	return resp.recordset ? resp.recordset : resp;
+};
+
+const getSysTablesCatalogCapabilities = async ({ client, dbName }) => {
+	const connectionClient = await getNewConnectionClientByDb(client, dbName);
+	const [{ Has_HistoryTableId, Has_IsMemoryOptimized } = {}] = await mapResponse(
+		connectionClient.query(`
+			SELECT
+				COUNT(CASE WHEN name = 'history_table_id' THEN 1 END) AS Has_HistoryTableId,
+				COUNT(CASE WHEN name = 'is_memory_optimized' THEN 1 END) AS Has_IsMemoryOptimized
+			FROM sys.all_columns
+			WHERE object_id = OBJECT_ID('sys.tables')
+		`),
+	);
+
+	return {
+		isHistoryTableSupported: Boolean(Has_HistoryTableId),
+		isMemoryOptimizedTableSupported: Boolean(Has_IsMemoryOptimized),
+	};
 };
 
 const getDescriptionComments = async ({ client, dbName, schema, entity, logger }) => {
