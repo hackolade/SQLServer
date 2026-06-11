@@ -316,6 +316,7 @@ const getDatabaseIndexes = async ({ client, dbName, tablesInfo, logger }) => {
 
 const getIndexesBucketCount = async ({ client, dbName, indexesId, logger }) => {
 	if (!indexesId.length) {
+		logger.log('info', { message: `No database indexes to get. Skipping...` }, 'Reverse Engineering');
 		return [];
 	}
 
@@ -1000,7 +1001,21 @@ const getWhereClauseForUniqueSchemasAndTables = ({ tableAlias, allUniqueSchemasA
 	`OBJECT_SCHEMA_NAME(${tableAlias}.object_id) IN (${[...schemas].join(', ')})
 	AND OBJECT_NAME(${tableAlias}.object_id) IN (${[...tables].join(', ')})`;
 
-const getDatabaseProcedures = async ({ client, dbName, logger }) => {
+const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures }) => {
+	if (!includeProcedures) {
+		logger.log(
+			'info',
+			{ message: 'Stored procedures not included in reverse-engineering options. Skipping...' },
+			'Reverse Engineering',
+		);
+		logger.progress({
+			message: 'Skipping discovering stored procedure metadata',
+			containerName: dbName,
+			entityName: '',
+		});
+		return [];
+	}
+
 	const currentDbConnectionClient = await getClient({
 		client,
 		dbName,
@@ -1035,7 +1050,17 @@ const getDatabaseProcedures = async ({ client, dbName, logger }) => {
 
 	const rawProcedures = await mapResponse(response);
 
-	return rawProcedures.map(parseProcedure(logger));
+	logger.log('info', { message: `Parsing procedures.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Parsing procedures', containerName: dbName, entityName: '' });
+	const start = Date.now();
+	const parsedProcedures = rawProcedures.map(parseProcedure(logger));
+	logger.log(
+		'info',
+		{ message: `Procedures parsed. Time taken to parse procedures: ${Date.now() - start}ms` },
+		'Reverse Engineering',
+	);
+
+	return parsedProcedures;
 };
 
 module.exports = {
