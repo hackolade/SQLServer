@@ -316,6 +316,7 @@ const getDatabaseIndexes = async ({ client, dbName, tablesInfo, logger }) => {
 
 const getIndexesBucketCount = async ({ client, dbName, indexesId, logger }) => {
 	if (!indexesId.length) {
+		logger.log('info', { message: `No database indexes to get. Skipping...` }, 'Reverse Engineering');
 		return [];
 	}
 
@@ -874,7 +875,7 @@ const getTableDefaultConstraintNames = async ({ client, dbName, tableName, schem
 		client,
 		dbName,
 		meta: {
-			action: 'getting default cosntraint names',
+			action: 'getting default constraint names',
 			objects: ['sys.all_columns', 'sys.tables', 'sys.schemas', 'sys.default_constraints'],
 			skip: true,
 		},
@@ -1000,7 +1001,21 @@ const getWhereClauseForUniqueSchemasAndTables = ({ tableAlias, allUniqueSchemasA
 	`OBJECT_SCHEMA_NAME(${tableAlias}.object_id) IN (${[...schemas].join(', ')})
 	AND OBJECT_NAME(${tableAlias}.object_id) IN (${[...tables].join(', ')})`;
 
-const getDatabaseProcedures = async ({ client, dbName, logger }) => {
+const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures }) => {
+	if (!includeProcedures) {
+		logger.log(
+			'info',
+			{ message: "'Include stored procedures' is not selected in reverse-engineering options." },
+			'Reverse Engineering',
+		);
+		logger.progress({
+			message: 'Skipped: discovering stored procedure',
+			containerName: dbName,
+			entityName: '',
+		});
+		return [];
+	}
+
 	const currentDbConnectionClient = await getClient({
 		client,
 		dbName,
@@ -1035,7 +1050,17 @@ const getDatabaseProcedures = async ({ client, dbName, logger }) => {
 
 	const rawProcedures = await mapResponse(response);
 
-	return rawProcedures.map(parseProcedure(logger));
+	logger.log('info', { message: `Parsing procedures.` }, 'Reverse Engineering');
+	logger.progress({ message: 'Parsing procedures', containerName: dbName, entityName: '' });
+	const start = Date.now();
+	const parsedProcedures = rawProcedures.map(parseProcedure(logger));
+	logger.log(
+		'info',
+		{ message: `Procedures parsed. Time taken to parse procedures: ${Date.now() - start}ms` },
+		'Reverse Engineering',
+	);
+
+	return parsedProcedures;
 };
 
 module.exports = {

@@ -285,30 +285,46 @@ const addTotalBucketCountToDatabaseIndexes = ({ databaseIndexes, indexesBucketCo
 	});
 };
 
-const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => {
+const logDiscoveredMetadataCount = ({ logger, label, items = [] }) => {
+	logger.log('info', { message: `Found ${items.length} ${label}.` }, 'Reverse Engineering');
+};
+
+const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger, reverseEngineeringOptions }) => {
+	const { includeProcedures = false } = reverseEngineeringOptions;
 	const allUniqueSchemasAndTables = getAllUniqueSchemasAndTables({ tablesInfo });
 
 	const rawDatabaseIndexes = await getDatabaseIndexes({ client, dbName, tablesInfo, logger });
+	logDiscoveredMetadataCount({ logger, label: 'database indexes', items: rawDatabaseIndexes });
+
 	const databaseCheckConstraints = await getDatabaseCheckConstraints({
 		client,
 		dbName,
 		allUniqueSchemasAndTables,
 		logger,
 	});
+	logDiscoveredMetadataCount({ logger, label: 'check constraints', items: databaseCheckConstraints });
+
 	const viewsIndexes = await getViewsIndexes({ client, dbName, logger });
+	logDiscoveredMetadataCount({ logger, label: 'view indexes', items: viewsIndexes });
+
 	const fullTextIndexes = await getFullTextIndexes({
 		client,
 		dbName,
 		allUniqueSchemasAndTables,
 		logger,
 	});
+	logDiscoveredMetadataCount({ logger, label: 'full-text indexes', items: fullTextIndexes });
+
 	const spatialIndexes = await getSpatialIndexes({
 		client,
 		dbName,
 		allUniqueSchemasAndTables,
 		logger,
 	});
-	const procedures = await getDatabaseProcedures({ client, dbName, logger });
+	logDiscoveredMetadataCount({ logger, label: 'spatial indexes', items: spatialIndexes });
+
+	const procedures = await getDatabaseProcedures({ client, dbName, logger, includeProcedures });
+
 	const indexesBucketCount = await getIndexesBucketCount({
 		client,
 		dbName,
@@ -316,13 +332,18 @@ const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger }) => 
 		logger,
 	});
 	const databaseUDT = await getDatabaseUserDefinedTypes({ client, dbName, logger });
+	logDiscoveredMetadataCount({ logger, label: 'user-defined types', items: databaseUDT });
+
 	const databaseMemoryOptimizedTables = await getDatabaseMemoryOptimizedTables({ client, dbName, logger });
+	logDiscoveredMetadataCount({ logger, label: 'memory-optimized tables', items: databaseMemoryOptimizedTables });
+
 	const xmlSchemaCollections = await getDatabaseXmlSchemaCollection({
 		client,
 		dbName,
 		allUniqueSchemasAndTables,
 		logger,
 	});
+	logDiscoveredMetadataCount({ logger, label: 'xml schema collection usages', items: xmlSchemaCollections });
 
 	const uniqueDatabaseIndexesColumns = getUniqueIndexesColumns({ indexesColumns: rawDatabaseIndexes });
 	const databaseIndexes = addTotalBucketCountToDatabaseIndexes({
@@ -564,7 +585,7 @@ const reverseCollectionsToJSON = async ({ client, tablesInfo, reverseEngineering
 		fullTextIndexes,
 		spatialIndexes,
 		procedures,
-	} = await fetchDatabaseMetadata({ client, dbName, tablesInfo, logger });
+	} = await fetchDatabaseMetadata({ client, dbName, tablesInfo, logger, reverseEngineeringOptions });
 
 	return processSchemas({
 		tablesInfo,
