@@ -875,7 +875,7 @@ const getTableDefaultConstraintNames = async ({ client, dbName, tableName, schem
 		client,
 		dbName,
 		meta: {
-			action: 'getting default cosntraint names',
+			action: 'getting default constraint names',
 			objects: ['sys.all_columns', 'sys.tables', 'sys.schemas', 'sys.default_constraints'],
 			skip: true,
 		},
@@ -1005,11 +1005,11 @@ const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures
 	if (!includeProcedures) {
 		logger.log(
 			'info',
-			{ message: 'Stored procedures not included in reverse-engineering options. Skipping...' },
+			{ message: "'Include stored procedures' is not selected in reverse-engineering options." },
 			'Reverse Engineering',
 		);
 		logger.progress({
-			message: 'Skipping discovering stored procedure metadata',
+			message: 'Skipped: discovering stored procedure',
 			containerName: dbName,
 			entityName: '',
 		});
