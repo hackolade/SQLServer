@@ -1021,7 +1021,13 @@ const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures
 		dbName,
 		meta: {
 			action: 'getting procedures query',
-			objects: ['sys.procedures', 'sys.schemas', 'sys.sql_modules', 'sys.extended_properties'],
+			objects: [
+				'sys.procedures',
+				'sys.schemas',
+				'sys.sql_modules',
+				'sys.extended_properties',
+				'sys.sql_expression_dependencies',
+			],
 			skip: true,
 		},
 		logger,
