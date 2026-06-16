@@ -1001,7 +1001,7 @@ const getWhereClauseForUniqueSchemasAndTables = ({ tableAlias, allUniqueSchemasA
 	`OBJECT_SCHEMA_NAME(${tableAlias}.object_id) IN (${[...schemas].join(', ')})
 	AND OBJECT_NAME(${tableAlias}.object_id) IN (${[...tables].join(', ')})`;
 
-const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures }) => {
+const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures, allUniqueSchemasAndTables }) => {
 	if (!includeProcedures) {
 		logger.log(
 			'info',
@@ -1027,11 +1027,13 @@ const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures
 		logger,
 	});
 
+	const { schemas, tables } = allUniqueSchemasAndTables;
+
 	logger.log('info', { message: `Get '${dbName}' database procedures.` }, 'Reverse Engineering');
 	logger.progress({ message: 'Discovering stored procedure metadata', containerName: dbName, entityName: '' });
 
 	const response = await currentDbConnectionClient.query(`
-		SELECT
+		SELECT DISTINCT
 				s.name AS schema_name,
 				p.name AS procedure_name,
 				sm.definition AS procedure_body,
@@ -1045,12 +1047,20 @@ const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures
 				ON ep.major_id = p.object_id
 				AND ep.minor_id = 0
 				AND ep.name = 'MS_Description'
-		ORDER BY s.name, p.name;
+		INNER JOIN sys.sql_expression_dependencies sed
+				ON p.object_id = sed.referencing_id
+		WHERE s.name IN (${[...schemas].join(', ')})
+				AND sed.referenced_entity_name IN (${[...tables].join(', ')})
+		ORDER BY s.name, p.name
 		`);
 
 	const rawProcedures = await mapResponse(response);
 
-	logger.log('info', { message: `Parsing procedures.` }, 'Reverse Engineering');
+	logger.log(
+		'info',
+		{ message: `Parsing procedures finished. Procedures found: ${rawProcedures.length}.` },
+		'Reverse Engineering',
+	);
 	logger.progress({ message: 'Parsing procedures', containerName: dbName, entityName: '' });
 	const start = Date.now();
 	const parsedProcedures = rawProcedures.map(parseProcedure(logger));

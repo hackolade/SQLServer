@@ -323,7 +323,13 @@ const fetchDatabaseMetadata = async ({ client, dbName, tablesInfo, logger, rever
 	});
 	logDiscoveredMetadataCount({ logger, label: 'spatial indexes', items: spatialIndexes });
 
-	const procedures = await getDatabaseProcedures({ client, dbName, logger, includeProcedures });
+	const procedures = await getDatabaseProcedures({
+		client,
+		dbName,
+		logger,
+		includeProcedures,
+		allUniqueSchemasAndTables,
+	});
 
 	const indexesBucketCount = await getIndexesBucketCount({
 		client,
