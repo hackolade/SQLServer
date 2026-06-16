@@ -1064,7 +1064,7 @@ const getDatabaseProcedures = async ({ client, dbName, logger, includeProcedures
 
 	logger.log(
 		'info',
-		{ message: `Parsing procedures finished. Procedures found: ${rawProcedures.length}.` },
+		{ message: `Fetching stored procedures completed. Procedures found: ${rawProcedures.length}.` },
 		'Reverse Engineering',
 	);
 	logger.progress({ message: 'Parsing procedures', containerName: dbName, entityName: '' });
