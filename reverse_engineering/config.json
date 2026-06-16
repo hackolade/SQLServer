@@ -16,5 +16,12 @@
 		}
 	],
 	"externalBrowserPort": 8080,
-	"helpUrl": "https://hackolade.com/help/ConnecttoaSQLServerinstance.html"
+	"helpUrl": "https://hackolade.com/help/ConnecttoaSQLServerinstance.html",
+	"options": [
+		{
+			"inputLabel": "Include stored procedures",
+			"inputTooltip": "Reverse-engineer stored procedures",
+			"inputKeyword": "includeProcedures"
+		}
+	]
 }
