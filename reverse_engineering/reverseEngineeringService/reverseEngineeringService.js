@@ -92,6 +92,10 @@ const isViewPartitioned = ({ viewStatement }) => {
 };
 
 const getPartitionedJsonSchema = ({ viewInfo, viewColumnRelations }) => {
+	if (!viewInfo.length) {
+		return { properties: {} };
+	}
+
 	const aliasToName = viewInfo.reduce(
 		(aliasToName, item) => ({
 			...aliasToName,
@@ -154,6 +158,10 @@ const getSelectStatementFromDefinition = ({ definition }) => {
 };
 
 const getPartitionedSelectStatement = ({ definition, table, dbName }) => {
+	if (!table) {
+		return '';
+	}
+
 	const tableRef = new RegExp(`(\\[?${dbName}\\]?\\.)?(\\[?${table[0]}\\]?\\.)?\\[?${table[1]}\\]?`, 'i');
 	const statement = getSelectStatementFromDefinition({ definition })
 		.split(/UNION\s+ALL/i)
@@ -212,8 +220,8 @@ const prepareViewJSON = async ({ client, dbName, viewName, schemaName, logger, j
 			name: viewName,
 			relatedTables: [
 				{
-					tableName: viewInfo[0]['ReferencedTableName'],
-					schemaName: viewInfo[0]['ReferencedSchemaName'],
+					tableName: viewInfo[0]?.['ReferencedTableName'],
+					schemaName: viewInfo[0]?.['ReferencedSchemaName'],
 				},
 			],
 		};
