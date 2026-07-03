@@ -2570,16 +2570,6 @@ making sure that you maintain a proper JSON format.
 				"markdown": false
 			},
 			{
-				"propertyName": "Generated always as row",
-				"propertyKeyword": "GENERATED_ALWAYS_AS_ROW",
-				"propertyType": "select",
-				"options": ["START", "END"],
-				"dependency": {
-					"key": "mode",
-					"value": "datetime2"
-				}
-			},
-			{
 				"propertyName": "Primary key",
 				"propertyNameFull": "Composite Primary Key",
 				"propertyKeyword": "compositePrimaryKey",
