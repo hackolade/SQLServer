@@ -498,7 +498,7 @@ const ddlProvider = (baseProvider, options, app) => {
 			const isTempTableStartTimeColumnHidden =
 				_.get(parentJsonSchema, 'periodForSystemTime[0].startTime[0].type', '') === 'hidden';
 			const isTempTableEndTimeColumnHidden =
-				_.get(parentJsonSchema, 'periodForSystemTime[0].startTime[0].type', '') === 'hidden';
+				_.get(parentJsonSchema, 'periodForSystemTime[0].endTime[0].type', '') === 'hidden';
 
 			return {
 				...columnDefinition,
