@@ -1049,6 +1049,10 @@ const ddlProvider = (baseProvider, options, app) => {
 		},
 
 		addCheckConstraint(tableName, constraintName, expression, check) {
+			if (!expression?.trim?.()) {
+				return '';
+			}
+
 			const templateConfig = {
 				tableName,
 				constraintName,
