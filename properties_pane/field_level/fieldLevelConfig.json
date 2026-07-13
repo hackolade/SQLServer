@@ -126,6 +126,7 @@ making sure that you maintain a proper JSON format.
 				"propertyName": "Subtype",
 				"propertyKeyword": "mode",
 				"propertyType": "select",
+				"enableForReference": true,
 				"options": ["char", "nchar", "ntext", "text", "varchar", "nvarchar"],
 				"data": "options",
 				"valueType": "string",
@@ -989,6 +990,7 @@ making sure that you maintain a proper JSON format.
 				"propertyName": "Subtype",
 				"propertyKeyword": "mode",
 				"propertyType": "select",
+				"enableForReference": true,
 				"options": [
 					"bigint",
 					"bit",
@@ -1009,6 +1011,7 @@ making sure that you maintain a proper JSON format.
 				"propertyName": "Synonym",
 				"propertyKeyword": "synonym",
 				"propertyType": "select",
+				"enableForReference": true,
 				"options": ["", "dec"],
 				"data": "options",
 				"valueType": "string",
@@ -1021,6 +1024,7 @@ making sure that you maintain a proper JSON format.
 				"propertyName": "Synonym",
 				"propertyKeyword": "synonym",
 				"propertyType": "select",
+				"enableForReference": true,
 				"options": ["", "double precision"],
 				"data": "options",
 				"valueType": "string",
@@ -1741,6 +1745,7 @@ making sure that you maintain a proper JSON format.
 				"propertyName": "Subtype",
 				"propertyKeyword": "mode",
 				"propertyType": "select",
+				"enableForReference": true,
 				"options": ["binary", "image", "varbinary"],
 				"data": "options",
 				"valueType": "string"
@@ -1749,6 +1754,7 @@ making sure that you maintain a proper JSON format.
 				"propertyName": "Synonym",
 				"propertyKeyword": "synonym",
 				"propertyType": "select",
+				"enableForReference": true,
 				"options": ["", "binary varying"],
 				"data": "options",
 				"valueType": "string",
@@ -2427,6 +2433,7 @@ making sure that you maintain a proper JSON format.
 				"propertyType": "select",
 				"options": ["date", "datetime", "datetime2", "datetimeoffset", "smalldatetime", "time", "timestamp"],
 				"data": "options",
+				"enableForReference": true,
 				"valueType": "string"
 			},
 			{
