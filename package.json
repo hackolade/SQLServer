@@ -71,7 +71,7 @@
         "crypto": "1.0.1",
         "lodash": "4.18.1",
         "mssql": "12.5.0",
-        "qs": "6.15.2",
+        "qs": "6.16.0",
         "randomstring": "1.2.1",
         "sql-formatter": "2.3.4"
     },
