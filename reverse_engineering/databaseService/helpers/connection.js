@@ -1,10 +1,10 @@
 const fs = require('fs');
 const sql = require('mssql');
-const { hckFetch } = require('@hackolade/fetch');
+const { getMfaAccessToken } = require('../../helpers/mfaAccessToken');
 
 const QUERY_REQUEST_TIMEOUT = 60000;
 
-async function getConnectionClient({ connectionInfo, logger }) {
+async function getConnectionClient({ connectionInfo, logger, app }) {
 	const userName = getUserName({ connectionInfo });
 	const tenantId = connectionInfo.connectionTenantId || connectionInfo.tenantId || 'common';
 	const clientId = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
@@ -17,7 +17,7 @@ async function getConnectionClient({ connectionInfo, logger }) {
 		case 'Username / Password (Windows)':
 			return await connectWithWindowsAuth({ connectionInfo, userName, sslOptions, timeout });
 		case 'Azure Active Directory (MFA)':
-			return await connectWithAzureMFA({ connectionInfo, sslOptions, tenantId, clientId, logger });
+			return await connectWithAzureMFA({ connectionInfo, sslOptions, logger, app });
 		case 'Azure Active Directory (Username / Password)':
 			return await connectWithAzurePassword({
 				connectionInfo,
@@ -76,9 +76,8 @@ async function connectWithWindowsAuth({ connectionInfo, userName, sslOptions, ti
 	});
 }
 
-async function connectWithAzureMFA({ connectionInfo, sslOptions, tenantId, clientId, logger }) {
-	const redirectUri = 'http://localhost:8080';
-	const token = await getMFAToken({ connectionInfo, tenantId, clientId, redirectUri, logger });
+async function connectWithAzureMFA({ connectionInfo, sslOptions, logger, app }) {
+	const token = await getMfaAccessToken({ app, connectionInfo, logger });
 
 	return await sql.connect({
 		...getBaseConnectionConfig({ connectionInfo, timeout: QUERY_REQUEST_TIMEOUT }),
@@ -149,44 +148,6 @@ function getSslConfig({ connectionInfo }) {
 	}
 
 	return {};
-}
-
-async function getMFAToken({ connectionInfo, tenantId, redirectUri, clientId, logger, agent }) {
-	try {
-		const urlParams = new URLSearchParams();
-		urlParams.append('code', connectionInfo?.externalBrowserQuery?.code || '');
-		urlParams.append('client_id', clientId);
-		urlParams.append('redirect_uri', redirectUri);
-		urlParams.append('grant_type', 'authorization_code');
-		urlParams.append('code_verifier', connectionInfo?.proofKey);
-
-		const options = {
-			method: 'POST',
-			headers: {
-				'Accept': 'application/json',
-				'Content-Type': 'application/x-www-form-urlencoded',
-				'Origin': 'http://localhost',
-			},
-			body: urlParams,
-		};
-
-		const response = await hckFetch(`https://login.microsoftonline.com/organizations/oauth2/v2.0/token`, options);
-		const parsedResponse = await parseResponse(response);
-
-		return parsedResponse?.access_token || '';
-	} catch (error) {
-		logger.log('error', { message: error.message, stack: error.stack, error }, 'MFA auth error');
-		return '';
-	}
-}
-
-async function parseResponse(response) {
-	if (response.status !== 200) {
-		const errorMessage = await response.text();
-		throw new Error(errorMessage);
-	}
-
-	return response.json();
 }
 
 function getUserName({ connectionInfo }) {

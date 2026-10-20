@@ -9,7 +9,7 @@ class ClientManager {
 		return this.#client;
 	}
 
-	async initClient({ connectionInfo, sshService, attempts = 0, logger }) {
+	async initClient({ connectionInfo, sshService, attempts = 0, logger, app }) {
 		if (!this.#sshService) {
 			this.#sshService = sshService;
 		}
@@ -38,7 +38,7 @@ class ClientManager {
 		}
 
 		try {
-			this.#client = await getConnectionClient({ connectionInfo: connectionParams, logger });
+			this.#client = await getConnectionClient({ connectionInfo: connectionParams, logger, app });
 
 			return this.#client;
 		} catch (error) {
@@ -57,6 +57,7 @@ class ClientManager {
 					sshService,
 					attempts: attempts + 1,
 					logger,
+					app,
 				});
 			}
 
