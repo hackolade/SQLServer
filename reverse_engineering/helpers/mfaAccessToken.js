@@ -105,15 +105,21 @@ const getMfaAccessToken = async ({ app, connectionInfo, logger } = {}) => {
 	return accessToken;
 };
 
-const shouldUseExternalBrowser = ({ app, connectionInfo } = {}) => {
-	if (connectionInfo.authMethod !== 'Azure Active Directory (MFA)') {
+const isEntraMfa = ({ connectionInfo } = {}) => connectionInfo?.authMethod === 'Azure Active Directory (MFA)';
+
+const canRequestUserToMachineAccessToken = ({ app, connectionInfo } = {}) => {
+	if (!isEntraMfa({ connectionInfo })) {
 		return false;
 	}
 
-	return !loadOauthModule({ app });
+	return Boolean(loadOauthModule({ app }));
 };
+
+const shouldUseExternalBrowser = ({ app, connectionInfo } = {}) =>
+	isEntraMfa({ connectionInfo }) && !canRequestUserToMachineAccessToken({ app, connectionInfo });
 
 module.exports = {
 	getMfaAccessToken,
+	canRequestUserToMachineAccessToken,
 	shouldUseExternalBrowser,
 };

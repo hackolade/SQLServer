@@ -16,7 +16,6 @@
 		}
 	],
 	"externalBrowserPort": 8080,
-	"userToMachineOAuth": true,
 	"helpUrl": "https://hackolade.com/help/ConnecttoaSQLServerinstance.html",
 	"options": [
 		{

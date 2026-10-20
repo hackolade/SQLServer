@@ -18,7 +18,7 @@ const getOptionsFromConnectionInfo = require('./helpers/getOptionsFromConnection
 const { adaptJsonSchema } = require('./helpers/adaptJsonSchema');
 const { parseConnectionString } = require('./helpers/parseConnectionString');
 const { prepareError } = require('./databaseService/helpers/errorService');
-const { shouldUseExternalBrowser } = require('./helpers/mfaAccessToken');
+const { canRequestUserToMachineAccessToken, shouldUseExternalBrowser } = require('./helpers/mfaAccessToken');
 
 module.exports = {
 	async connect(connectionInfo, logger, callback, app) {
@@ -67,6 +67,11 @@ module.exports = {
 	},
 
 	async getExternalBrowserUrl(connectionInfo, logger, cb, app) {
+		if (canRequestUserToMachineAccessToken({ app, connectionInfo })) {
+			cb(null, {});
+			return;
+		}
+
 		const verifier = randomstring.generate(32);
 		const base64Digest = crypto.createHash('sha256').update(verifier).digest('base64');
 		const challenge = base64url.fromBase64(base64Digest);

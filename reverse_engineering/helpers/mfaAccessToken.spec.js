@@ -9,8 +9,18 @@ globalThis.entraMfaFetch = async () => {
 };
 
 registerHooks({
+	resolve(specifier, context, nextResolve) {
+		if (specifier !== '@hackolade/fetch') {
+			return nextResolve(specifier, context);
+		}
+
+		return {
+			url: 'file:///hackolade-fetch-stub',
+			shortCircuit: true,
+		};
+	},
 	load(url, context, nextLoad) {
-		if (!url.includes('@hackolade/fetch')) {
+		if (url !== 'file:///hackolade-fetch-stub') {
 			return nextLoad(url, context);
 		}
 
@@ -22,7 +32,11 @@ registerHooks({
 	},
 });
 
-const { getMfaAccessToken, shouldUseExternalBrowser } = require('./mfaAccessToken');
+const {
+	getMfaAccessToken,
+	canRequestUserToMachineAccessToken,
+	shouldUseExternalBrowser,
+} = require('./mfaAccessToken');
 
 const ENTRA_CLIENT_ID = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
 const OAUTH_NOT_EXPOSED_MESSAGE = 'The module @hackolade/oauth is not exposed by the application to the plugins!';
@@ -264,6 +278,30 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 				message: 'MFA auth error',
 			},
 		]);
+	});
+});
+
+describe('canRequestUserToMachineAccessToken', { concurrency: false }, () => {
+	const mfaConnectionInfo = { authMethod: 'Azure Active Directory (MFA)' };
+
+	it('uses the user-to-machine call when the OAuth module is present', () => {
+		const app = {
+			require() {
+				return {};
+			},
+		};
+
+		assert.equal(canRequestUserToMachineAccessToken({ app, connectionInfo: mfaConnectionInfo }), true);
+	});
+
+	it('keeps the external browser when the OAuth module is not exposed', () => {
+		const app = {
+			require() {
+				throw new Error(OAUTH_NOT_EXPOSED_MESSAGE);
+			},
+		};
+
+		assert.equal(canRequestUserToMachineAccessToken({ app, connectionInfo: mfaConnectionInfo }), false);
 	});
 });
 
