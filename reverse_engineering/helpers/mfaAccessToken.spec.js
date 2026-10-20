@@ -22,7 +22,7 @@ registerHooks({
 	},
 });
 
-const { getMfaAccessToken } = require('./mfaAccessToken');
+const { getMfaAccessToken, shouldUseExternalBrowser } = require('./mfaAccessToken');
 
 const ENTRA_CLIENT_ID = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
 const OAUTH_NOT_EXPOSED_MESSAGE = 'The module @hackolade/oauth is not exposed by the application to the plugins!';
@@ -264,5 +264,43 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 				message: 'MFA auth error',
 			},
 		]);
+	});
+});
+
+describe('shouldUseExternalBrowser', { concurrency: false }, () => {
+	const mfaConnectionInfo = { authMethod: 'Azure Active Directory (MFA)' };
+
+	it('opens SQL when the OAuth module is present', () => {
+		const app = {
+			require() {
+				return {};
+			},
+		};
+
+		assert.equal(shouldUseExternalBrowser({ app, connectionInfo: mfaConnectionInfo }), false);
+	});
+
+	it('keeps the external browser when the OAuth module is not exposed', () => {
+		const app = {
+			require() {
+				throw new Error(OAUTH_NOT_EXPOSED_MESSAGE);
+			},
+		};
+
+		assert.equal(shouldUseExternalBrowser({ app, connectionInfo: mfaConnectionInfo }), true);
+	});
+
+	it('surfaces any other failure while loading the OAuth module', () => {
+		const failure = new Error('oauth crashed');
+		const app = {
+			require() {
+				throw failure;
+			},
+		};
+
+		assert.throws(
+			() => shouldUseExternalBrowser({ app, connectionInfo: mfaConnectionInfo }),
+			error => error === failure,
+		);
 	});
 });

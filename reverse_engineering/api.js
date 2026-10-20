@@ -18,7 +18,7 @@ const getOptionsFromConnectionInfo = require('./helpers/getOptionsFromConnection
 const { adaptJsonSchema } = require('./helpers/adaptJsonSchema');
 const { parseConnectionString } = require('./helpers/parseConnectionString');
 const { prepareError } = require('./databaseService/helpers/errorService');
-const { isUserToMachineOauthAvailable } = require('./helpers/mfaAccessToken');
+const { shouldUseExternalBrowser } = require('./helpers/mfaAccessToken');
 
 module.exports = {
 	async connect(connectionInfo, logger, callback, app) {
@@ -44,10 +44,7 @@ module.exports = {
 	async testConnection(connectionInfo, logger, callback, app) {
 		try {
 			logInfo('Test connection', connectionInfo, logger);
-			if (
-				connectionInfo.authMethod === 'Azure Active Directory (MFA)' &&
-				!isUserToMachineOauthAvailable({ app })
-			) {
+			if (shouldUseExternalBrowser({ app, connectionInfo })) {
 				await this.getExternalBrowserUrl(connectionInfo, logger, callback, app);
 			} else {
 				const client = await this.connect(connectionInfo, logger, () => {}, app);

@@ -105,9 +105,15 @@ const getMfaAccessToken = async ({ app, connectionInfo, logger } = {}) => {
 	return accessToken;
 };
 
-const isUserToMachineOauthAvailable = ({ app } = {}) => Boolean(loadOauthModule({ app }));
+const shouldUseExternalBrowser = ({ app, connectionInfo } = {}) => {
+	if (connectionInfo.authMethod !== 'Azure Active Directory (MFA)') {
+		return false;
+	}
+
+	return !loadOauthModule({ app });
+};
 
 module.exports = {
 	getMfaAccessToken,
-	isUserToMachineOauthAvailable,
+	shouldUseExternalBrowser,
 };
