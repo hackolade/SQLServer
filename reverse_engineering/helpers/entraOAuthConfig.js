@@ -31,7 +31,7 @@ const getLegacyEntraOAuthConfig = ({ tenantId } = {}) => ({
 	desktopTokenRequestHeaders: FALLBACK_DESKTOP_TOKEN_REQUEST_HEADERS,
 });
 
-const getEntraOAuthConfig = ({ app, tenantId } = {}) => {
+const getEntraOAuthConfig = async ({ app, tenantId } = {}) => {
 	const oauth = loadOauthModule({ app });
 
 	if (!oauth) {

@@ -35,7 +35,7 @@ const parseResponse = async response => {
 
 const exchangeAuthorizationCode = async ({ app, connectionInfo, logger } = {}) => {
 	try {
-		const { productionClientId, tokenEndpoint, desktopTokenRequestHeaders } = getEntraOAuthConfig({ app });
+		const { productionClientId, tokenEndpoint, desktopTokenRequestHeaders } = await getEntraOAuthConfig({ app });
 		const urlParams = new URLSearchParams();
 
 		urlParams.append('code', connectionInfo?.externalBrowserQuery?.code || '');
@@ -70,7 +70,7 @@ const getMfaAccessToken = async ({ app, connectionInfo, logger } = {}) => {
 		return exchangeAuthorizationCode({ app, connectionInfo, logger });
 	}
 
-	const { productionClientId, authorizationEndpoint, tokenEndpoint } = oauth.getEntraIdOAuthConfig({
+	const { productionClientId, authorizationEndpoint, tokenEndpoint } = await oauth.getEntraIdOAuthConfig({
 		tenantId: resolveAuthorizeTenant({ connectionInfo }),
 	});
 	const { accessToken } = await oauth.browserLoginFlow({

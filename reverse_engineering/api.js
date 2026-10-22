@@ -77,7 +77,7 @@ module.exports = {
 		const base64Digest = crypto.createHash('sha256').update(verifier).digest('base64');
 		const challenge = base64url.fromBase64(base64Digest);
 		const tenantId = resolveAuthorizeTenant({ connectionInfo });
-		const { productionClientId, authorizationEndpoint } = getEntraOAuthConfig({ app, tenantId });
+		const { productionClientId, authorizationEndpoint } = await getEntraOAuthConfig({ app, tenantId });
 		const loginHint = connectionInfo.loginHint ? `login_hint=${encodeURIComponent(connectionInfo.loginHint)}&` : '';
 		const redirectUrl = `http://localhost:${connectionInfo.redirectPort || 8080}`;
 

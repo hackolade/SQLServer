@@ -25,7 +25,7 @@ async function getConnectionClient({ connectionInfo, logger, app }) {
 				sslOptions,
 				timeout,
 				tenantId,
-				clientId: getEntraOAuthConfig({ app }).productionClientId,
+				clientId: (await getEntraOAuthConfig({ app })).productionClientId,
 			});
 		default:
 			return await sql.connect(connectionInfo.connectionString);
