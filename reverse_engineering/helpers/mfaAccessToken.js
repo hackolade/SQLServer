@@ -73,15 +73,17 @@ const getMfaAccessToken = async ({ app, connectionInfo, logger } = {}) => {
 	const { productionClientId, authorizationEndpoint, tokenEndpoint } = oauth.getEntraIdOAuthConfig({
 		tenantId: resolveAuthorizeTenant({ connectionInfo }),
 	});
-	const { accessToken } = await oauth.getUserToMachineAccessToken({
+	const { accessToken } = await oauth.browserLoginFlow({
 		authorizationEndpoint,
 		tokenEndpoint,
 		clientId: productionClientId,
 		port: REDIRECT_PORT,
 		failOnPortConflict: true,
 		authorizationQuery: getAuthorizationQuery({ connectionInfo }),
-		headers: {
-			Origin: 'http://localhost',
+		tokenRequestOptions: {
+			headers: {
+				Origin: 'http://localhost',
+			},
 		},
 	});
 
