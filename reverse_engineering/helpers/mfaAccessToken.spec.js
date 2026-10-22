@@ -49,6 +49,7 @@ const getEntraIdOAuthConfig = ({ tenantId } = {}) => ({
 		: 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize',
 	tokenEndpoint: 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token',
 	adminConsentBase: 'https://login.microsoftonline.com/organizations/adminconsent',
+	desktopTokenRequestHeaders: { Origin: 'http://localhost' },
 });
 
 describe('getMfaAccessToken', { concurrency: false }, () => {
@@ -93,11 +94,6 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 					response_mode: 'query',
 					resource: 'https://database.windows.net/',
 					login_hint: 'user name@example.com',
-				},
-				tokenRequestOptions: {
-					headers: {
-						Origin: 'http://localhost',
-					},
 				},
 			},
 		]);
