@@ -1,13 +1,13 @@
 const fs = require('fs');
 const sql = require('mssql');
 const { getMfaAccessToken } = require('../../helpers/mfaAccessToken');
+const { getEntraOAuthConfig, resolveAuthorizeTenant } = require('../../helpers/entraOAuthConfig');
 
 const QUERY_REQUEST_TIMEOUT = 60000;
 
 async function getConnectionClient({ connectionInfo, logger, app }) {
 	const userName = getUserName({ connectionInfo });
-	const tenantId = connectionInfo.connectionTenantId || connectionInfo.tenantId || 'common';
-	const clientId = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
+	const tenantId = resolveAuthorizeTenant({ connectionInfo });
 	const sslOptions = getSslConfig({ connectionInfo });
 	const timeout = Number(connectionInfo.queryRequestTimeout) || QUERY_REQUEST_TIMEOUT;
 
@@ -25,7 +25,7 @@ async function getConnectionClient({ connectionInfo, logger, app }) {
 				sslOptions,
 				timeout,
 				tenantId,
-				clientId,
+				clientId: getEntraOAuthConfig({ app }).productionClientId,
 			});
 		default:
 			return await sql.connect(connectionInfo.connectionString);

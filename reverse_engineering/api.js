@@ -19,6 +19,7 @@ const { adaptJsonSchema } = require('./helpers/adaptJsonSchema');
 const { parseConnectionString } = require('./helpers/parseConnectionString');
 const { prepareError } = require('./databaseService/helpers/errorService');
 const { canRequestUserToMachineAccessToken, shouldUseExternalBrowser } = require('./helpers/mfaAccessToken');
+const { getEntraOAuthConfig, resolveAuthorizeTenant } = require('./helpers/entraOAuthConfig');
 
 module.exports = {
 	async connect(connectionInfo, logger, callback, app) {
@@ -75,14 +76,14 @@ module.exports = {
 		const verifier = randomstring.generate(32);
 		const base64Digest = crypto.createHash('sha256').update(verifier).digest('base64');
 		const challenge = base64url.fromBase64(base64Digest);
-		const tenantId = connectionInfo.connectionTenantId || connectionInfo.tenantId || 'common';
-		const clientId = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
+		const tenantId = resolveAuthorizeTenant({ connectionInfo });
+		const { productionClientId, authorizationEndpoint } = getEntraOAuthConfig({ app, tenantId });
 		const loginHint = connectionInfo.loginHint ? `login_hint=${encodeURIComponent(connectionInfo.loginHint)}&` : '';
 		const redirectUrl = `http://localhost:${connectionInfo.redirectPort || 8080}`;
 
 		cb(null, {
 			proofKey: verifier,
-			url: `https://login.microsoftonline.com/${tenantId}/oauth2/authorize?${loginHint}code_challenge_method=S256&code_challenge=${challenge}&response_type=code&response_mode=query&client_id=${clientId}&redirect_uri=${redirectUrl}&prompt=select_account&resource=https://database.windows.net/`,
+			url: `${authorizationEndpoint}?${loginHint}code_challenge_method=S256&code_challenge=${challenge}&response_type=code&response_mode=query&client_id=${productionClientId}&redirect_uri=${redirectUrl}&prompt=select_account&resource=https://database.windows.net/`,
 		});
 	},
 

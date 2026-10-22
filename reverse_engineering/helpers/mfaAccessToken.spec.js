@@ -41,6 +41,16 @@ const {
 const ENTRA_CLIENT_ID = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
 const OAUTH_NOT_EXPOSED_MESSAGE = 'The module @hackolade/oauth is not exposed by the application to the plugins!';
 
+const getEntraIdOAuthConfig = ({ tenantId } = {}) => ({
+	productionClientId: ENTRA_CLIENT_ID,
+	testingClientId: 'f28311c1-422d-4c77-8bbb-ff2fa1b84b7a',
+	authorizationEndpoint: tenantId
+		? `https://login.microsoftonline.com/${tenantId}/oauth2/authorize`
+		: 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize',
+	tokenEndpoint: 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token',
+	adminConsentBase: 'https://login.microsoftonline.com/organizations/adminconsent',
+});
+
 describe('getMfaAccessToken', { concurrency: false }, () => {
 	it('asks Studio for a user-to-machine token with the Entra authorize request', async () => {
 		const calls = [];
@@ -49,6 +59,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 				assert.equal(name, '@hackolade/oauth');
 
 				return {
+					getEntraIdOAuthConfig,
 					async getUserToMachineAccessToken(options) {
 						calls.push(options);
 
@@ -95,6 +106,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 		const app = {
 			require() {
 				return {
+					getEntraIdOAuthConfig,
 					async getUserToMachineAccessToken(options) {
 						calls.push(options);
 
@@ -129,6 +141,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 		const app = {
 			require() {
 				return {
+					getEntraIdOAuthConfig,
 					async getUserToMachineAccessToken(options) {
 						calls.push(options);
 
@@ -151,6 +164,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 		const app = {
 			require() {
 				return {
+					getEntraIdOAuthConfig,
 					async getUserToMachineAccessToken() {
 						return {};
 					},
@@ -193,6 +207,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 		const app = {
 			require() {
 				return {
+					getEntraIdOAuthConfig,
 					async getUserToMachineAccessToken() {
 						throw failure;
 					},
