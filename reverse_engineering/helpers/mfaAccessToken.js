@@ -4,8 +4,13 @@ const { hckFetch } = require('@hackolade/fetch');
 
 const { getEntraOAuthConfig, loadOauthModule, resolveAuthorizeTenant } = require('./entraOAuthConfig');
 
-const REDIRECT_URI = 'http://localhost:8080';
-const REDIRECT_PORT = 8080;
+const DEFAULT_EXTERNAL_BROWSER_PORT = 8080;
+
+const resolveExternalBrowserPort = ({ connectionInfo = {} } = {}) =>
+	connectionInfo.redirectPort ?? connectionInfo.externalBrowserPort ?? DEFAULT_EXTERNAL_BROWSER_PORT;
+
+const buildRedirectUri = ({ connectionInfo = {} } = {}) =>
+	`http://localhost:${resolveExternalBrowserPort({ connectionInfo })}`;
 
 const getAuthorizationQuery = ({ connectionInfo = {} } = {}) => {
 	const authorizationQuery = {
@@ -40,7 +45,7 @@ const exchangeAuthorizationCode = async ({ app, connectionInfo, logger } = {}) =
 
 		urlParams.append('code', connectionInfo?.externalBrowserQuery?.code || '');
 		urlParams.append('client_id', productionClientId);
-		urlParams.append('redirect_uri', REDIRECT_URI);
+		urlParams.append('redirect_uri', buildRedirectUri({ connectionInfo }));
 		urlParams.append('grant_type', 'authorization_code');
 		urlParams.append('code_verifier', connectionInfo?.proofKey);
 
@@ -73,11 +78,12 @@ const getMfaAccessToken = async ({ app, connectionInfo, logger } = {}) => {
 	const { productionClientId, authorizationEndpoint, tokenEndpoint } = await oauth.getEntraIdOAuthConfig({
 		tenantId: resolveAuthorizeTenant({ connectionInfo }),
 	});
+	const redirectPort = resolveExternalBrowserPort({ connectionInfo });
 	const { accessToken } = await oauth.browserLoginFlow({
 		authorizationEndpoint,
 		tokenEndpoint,
 		clientId: productionClientId,
-		port: REDIRECT_PORT,
+		port: redirectPort,
 		failOnPortConflict: true,
 		authorizationQuery: getAuthorizationQuery({ connectionInfo }),
 	});

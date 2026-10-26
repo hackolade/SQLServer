@@ -32,11 +32,7 @@ registerHooks({
 	},
 });
 
-const {
-	getMfaAccessToken,
-	canRequestUserToMachineAccessToken,
-	shouldUseExternalBrowser,
-} = require('./mfaAccessToken');
+const { getMfaAccessToken, canRequestUserToMachineAccessToken, shouldUseExternalBrowser } = require('./mfaAccessToken');
 
 const ENTRA_CLIENT_ID = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
 const OAUTH_NOT_EXPOSED_MESSAGE = 'The module @hackolade/oauth is not exposed by the application to the plugins!';
@@ -97,6 +93,30 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 				},
 			},
 		]);
+	});
+
+	it('uses externalBrowserPort from the connection for browserLoginFlow', async () => {
+		const calls = [];
+		const app = {
+			require() {
+				return {
+					getEntraIdOAuthConfig,
+					async browserLoginFlow(options) {
+						calls.push(options);
+
+						return { accessToken: 'sql-access-token' };
+					},
+				};
+			},
+		};
+
+		await getMfaAccessToken({
+			app,
+			connectionInfo: { externalBrowserPort: 8082 },
+			logger: { log() {} },
+		});
+
+		assert.equal(calls[0].port, 8082);
 	});
 
 	it('uses the control-plane tenant when the connection tenant is empty and omits a missing login hint', async () => {

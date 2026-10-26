@@ -79,7 +79,8 @@ module.exports = {
 		const tenantId = resolveAuthorizeTenant({ connectionInfo });
 		const { productionClientId, authorizationEndpoint } = await getEntraOAuthConfig({ app, tenantId });
 		const loginHint = connectionInfo.loginHint ? `login_hint=${encodeURIComponent(connectionInfo.loginHint)}&` : '';
-		const redirectUrl = `http://localhost:${connectionInfo.redirectPort || 8080}`;
+		const redirectPort = connectionInfo.redirectPort ?? connectionInfo.externalBrowserPort ?? 8080;
+		const redirectUrl = `http://localhost:${redirectPort}`;
 
 		cb(null, {
 			proofKey: verifier,
