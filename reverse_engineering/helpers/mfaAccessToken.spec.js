@@ -32,7 +32,7 @@ registerHooks({
 	},
 });
 
-const { getMfaAccessToken, canRequestUserToMachineAccessToken, shouldUseExternalBrowser } = require('./mfaAccessToken');
+const { getMfaAccessToken, canSignInWithStudio, shouldUseExternalBrowser } = require('./mfaAccessToken');
 
 const ENTRA_CLIENT_ID = '0dc36597-bc44-49f8-a4a7-ae5401959b85';
 const OAUTH_NOT_EXPOSED_MESSAGE = 'The module @hackolade/oauth is not exposed by the application to the plugins!';
@@ -57,7 +57,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 
 				return {
 					getEntraIdOAuthConfig,
-					async browserLoginFlow(options) {
+					async signInWithBrowser(options) {
 						calls.push(options);
 
 						return { accessToken: 'sql-access-token' };
@@ -84,7 +84,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 				tokenEndpoint: 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token',
 				clientId: ENTRA_CLIENT_ID,
 				port: 8080,
-				failOnPortConflict: true,
+				failOnPortConflict: false,
 				authorizationQuery: {
 					prompt: 'select_account',
 					response_mode: 'query',
@@ -95,13 +95,13 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 		]);
 	});
 
-	it('uses externalBrowserPort from the connection for browserLoginFlow', async () => {
+	it('uses externalBrowserPort from the connection for signInWithBrowser', async () => {
 		const calls = [];
 		const app = {
 			require() {
 				return {
 					getEntraIdOAuthConfig,
-					async browserLoginFlow(options) {
+					async signInWithBrowser(options) {
 						calls.push(options);
 
 						return { accessToken: 'sql-access-token' };
@@ -125,7 +125,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 			require() {
 				return {
 					getEntraIdOAuthConfig,
-					async browserLoginFlow(options) {
+					async signInWithBrowser(options) {
 						calls.push(options);
 
 						return { accessToken: 'sql-access-token' };
@@ -160,7 +160,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 			require() {
 				return {
 					getEntraIdOAuthConfig,
-					async browserLoginFlow(options) {
+					async signInWithBrowser(options) {
 						calls.push(options);
 
 						return { accessToken: 'sql-access-token' };
@@ -183,7 +183,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 			require() {
 				return {
 					getEntraIdOAuthConfig,
-					async browserLoginFlow() {
+					async signInWithBrowser() {
 						return {};
 					},
 				};
@@ -226,7 +226,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 			require() {
 				return {
 					getEntraIdOAuthConfig,
-					async browserLoginFlow() {
+					async signInWithBrowser() {
 						throw failure;
 					},
 				};
@@ -314,7 +314,7 @@ describe('getMfaAccessToken', { concurrency: false }, () => {
 	});
 });
 
-describe('canRequestUserToMachineAccessToken', { concurrency: false }, () => {
+describe('canSignInWithStudio', { concurrency: false }, () => {
 	const mfaConnectionInfo = { authMethod: 'Azure Active Directory (MFA)' };
 
 	it('uses the user-to-machine call when the OAuth module is present', () => {
@@ -324,7 +324,7 @@ describe('canRequestUserToMachineAccessToken', { concurrency: false }, () => {
 			},
 		};
 
-		assert.equal(canRequestUserToMachineAccessToken({ app, connectionInfo: mfaConnectionInfo }), true);
+		assert.equal(canSignInWithStudio({ app, connectionInfo: mfaConnectionInfo }), true);
 	});
 
 	it('keeps the external browser when the OAuth module is not exposed', () => {
@@ -334,7 +334,7 @@ describe('canRequestUserToMachineAccessToken', { concurrency: false }, () => {
 			},
 		};
 
-		assert.equal(canRequestUserToMachineAccessToken({ app, connectionInfo: mfaConnectionInfo }), false);
+		assert.equal(canSignInWithStudio({ app, connectionInfo: mfaConnectionInfo }), false);
 	});
 });
 
