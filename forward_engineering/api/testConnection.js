@@ -1,5 +1,6 @@
 const { getExternalBrowserUrl, connect } = require('../../reverse_engineering/api');
 const logInfo = require('../../reverse_engineering/helpers/logInfo');
+const { shouldUseExternalBrowser } = require('../../reverse_engineering/helpers/mfaAccessToken');
 const { logDatabaseVersion } = require('../../reverse_engineering/reverseEngineeringService/reverseEngineeringService');
 
 async function getExternalBrowserUrlLocal(connectionInfo, logger, cb, app) {
@@ -9,7 +10,7 @@ async function getExternalBrowserUrlLocal(connectionInfo, logger, cb, app) {
 async function testConnection(connectionInfo, logger, callback, app) {
 	try {
 		logInfo('Test connection', connectionInfo, logger);
-		if (connectionInfo.authMethod === 'Azure Active Directory (MFA)') {
+		if (shouldUseExternalBrowser({ app, connectionInfo })) {
 			await getExternalBrowserUrlLocal(connectionInfo, logger, callback, app);
 		} else {
 			const client = await connect(connectionInfo, logger, () => {}, app);

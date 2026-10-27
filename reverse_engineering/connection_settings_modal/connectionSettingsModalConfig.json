@@ -127,7 +127,7 @@
 					},
 					{
 						"value": "Azure Active Directory (MFA)",
-						"label": "Microsoft Entra ID via authorization code flow (PCKE)"
+						"label": "Microsoft Entra ID via authorization code flow (PKCE)"
 					},
 					{
 						"value": "Azure Active Directory (Username / Password)",
