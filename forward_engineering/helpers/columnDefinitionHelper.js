@@ -2,6 +2,7 @@ const _ = require('lodash');
 const templates = require('../configs/templates');
 const { assignTemplates } = require('../utils/assignTemplates');
 const { wrapInBrackets, escapeSpecialCharacters } = require('../utils/general');
+const { commentIfDeactivated } = require('./commentIfDeactivated');
 
 const addLength = (type, length) => {
 	return `${type}(${length})`;
@@ -128,18 +129,20 @@ const getEncryptedWith = ({ encryption, dbVersion }) => {
 const getColumnsComments = (tableName, terminator, columnDefinitions) => {
 	return columnDefinitions
 		.filter(({ comment }) => Boolean(comment))
-		.map(({ comment, schemaName, name }) => {
+		.map(({ comment, schemaName, name, isActivated }) => {
 			if (!schemaName || !tableName) {
 				return '';
 			}
 
-			return assignTemplates(templates.createColumnComment, {
+			const statement = assignTemplates(templates.createColumnComment, {
 				value: escapeSpecialCharacters(comment),
 				schemaName: wrapInBrackets(schemaName),
 				tableName: wrapInBrackets(tableName),
 				columnName: wrapInBrackets(name),
 				terminator,
 			});
+
+			return commentIfDeactivated(statement, { isActivated });
 		})
 		.join('\n');
 };
