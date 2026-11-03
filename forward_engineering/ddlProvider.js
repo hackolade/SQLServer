@@ -298,6 +298,7 @@ const ddlProvider = (baseProvider, options, app) => {
 				foreignTableActivated,
 				primarySchemaName,
 				customProperties,
+				isActivated: isRelationshipActivated,
 			},
 			dbData,
 			schemaData,
@@ -331,7 +332,7 @@ const ddlProvider = (baseProvider, options, app) => {
 					onUpdate: foreignOnUpdate ? ` ON UPDATE ${foreignOnUpdate}` : '',
 					terminator,
 				}),
-				isActivated,
+				isActivated: isActivated && isRelationshipActivated !== false,
 			};
 		},
 
@@ -345,6 +346,7 @@ const ddlProvider = (baseProvider, options, app) => {
 				primaryTableActivated,
 				foreignTableActivated,
 				customProperties,
+				isActivated: isRelationshipActivated,
 			},
 			dbData,
 			schemaData,
@@ -378,7 +380,8 @@ const ddlProvider = (baseProvider, options, app) => {
 					!isAllPrimaryKeysDeactivated &&
 					!isAllForeignKeysDeactivated &&
 					primaryTableActivated &&
-					foreignTableActivated,
+					foreignTableActivated &&
+					isRelationshipActivated !== false,
 			};
 		},
 
