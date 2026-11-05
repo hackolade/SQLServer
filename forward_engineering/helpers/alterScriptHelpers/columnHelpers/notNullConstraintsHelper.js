@@ -9,6 +9,7 @@ const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 const getModifyNonNullColumnsScriptDtos = ddlProvider => (collection, collectionSchema, schemaName, dbVersion) => {
 	const fullTableName = getFullTableName(collection);
 	const schemaData = { schemaName, dbVersion };
+	const isCollectionActivated = collection.role?.isActivated !== false;
 
 	const currentRequiredColumnNames = collection.required || [];
 	const previousRequiredColumnNames = collection.role.required || [];
@@ -31,10 +32,15 @@ const getModifyNonNullColumnsScriptDtos = ddlProvider => (collection, collection
 				ddlProvider,
 				schemaData,
 			});
+			const script = ddlProvider.setNotNullConstraint(
+				fullTableName,
+				wrapInBrackets(columnName),
+				columnDefinition,
+			);
+			const isActivated = isCollectionActivated && jsonSchema.isActivated !== false;
 
-			return ddlProvider.setNotNullConstraint(fullTableName, wrapInBrackets(columnName), columnDefinition);
-		})
-		.map(script => AlterScriptDto.getInstance([script], true, false));
+			return AlterScriptDto.getInstance([script], isActivated, false);
+		});
 
 	const removeNotNullConstraint = _.toPairs(collection.properties)
 		.filter(([name, jsonSchema]) => {
@@ -52,10 +58,11 @@ const getModifyNonNullColumnsScriptDtos = ddlProvider => (collection, collection
 				ddlProvider,
 				schemaData,
 			});
+			const script = ddlProvider.dropNotNullConstraint(fullTableName, wrapInBrackets(name), columnDefinition);
+			const isActivated = isCollectionActivated && jsonSchema.isActivated !== false;
 
-			return ddlProvider.dropNotNullConstraint(fullTableName, wrapInBrackets(name), columnDefinition);
-		})
-		.map(script => AlterScriptDto.getInstance([script], true, true));
+			return AlterScriptDto.getInstance([script], isActivated, true);
+		});
 
 	return [...addNotNullConstraintsScript, ...removeNotNullConstraint];
 };
