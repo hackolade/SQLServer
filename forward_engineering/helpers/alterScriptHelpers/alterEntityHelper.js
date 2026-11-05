@@ -257,6 +257,9 @@ const alterEntityHelper = (app, options) => {
 			tableName,
 		});
 
+	const isCommentActivated = ({ table, column } = {}) =>
+		table?.role?.isActivated !== false && column?.isActivated !== false;
+
 	const getTablesDropCommentAlterScriptsDto = tables => {
 		return Object.keys(tables)
 			.map(tableName => {
@@ -269,7 +272,7 @@ const alterEntityHelper = (app, options) => {
 				const schemaName = table.role?.compMod.keyspaceName;
 				const script = getTableDropCommentScript({ schemaName, tableName });
 
-				return AlterScriptDto.getInstance([script], true, true);
+				return AlterScriptDto.getInstance([script], isCommentActivated({ table }), true);
 			})
 			.filter(Boolean);
 	};
@@ -290,7 +293,7 @@ const alterEntityHelper = (app, options) => {
 				if (isCommentRemoved) {
 					script = getTableDropCommentScript({ schemaName, tableName });
 
-					return AlterScriptDto.getInstance([script], true, true);
+					return AlterScriptDto.getInstance([script], isCommentActivated({ table: tables[tableName] }), true);
 				}
 
 				if (!newComment || newComment === oldComment) {
@@ -307,7 +310,7 @@ const alterEntityHelper = (app, options) => {
 					});
 				}
 
-				return AlterScriptDto.getInstance([script], true, false);
+				return AlterScriptDto.getInstance([script], isCommentActivated({ table: tables[tableName] }), false);
 			})
 			.filter(Boolean);
 	};
@@ -350,7 +353,11 @@ const alterEntityHelper = (app, options) => {
 
 					const script = getColumnCreateCommentScript({ schemaName, tableName, columnName, comment });
 
-					return AlterScriptDto.getInstance([script], true, false);
+					return AlterScriptDto.getInstance(
+						[script],
+						isCommentActivated({ table: tables[tableName], column }),
+						false,
+					);
 				});
 			})
 			.filter(Boolean);
@@ -372,7 +379,11 @@ const alterEntityHelper = (app, options) => {
 					.map(columnName => {
 						const script = getColumnDropCommentScript({ schemaName, tableName, columnName });
 
-						return AlterScriptDto.getInstance([script], true, true);
+						return AlterScriptDto.getInstance(
+							[script],
+							isCommentActivated({ table: tables[tableName], column: columns[columnName] }),
+							true,
+						);
 					});
 			})
 			.filter(Boolean);
@@ -395,7 +406,11 @@ const alterEntityHelper = (app, options) => {
 					if (isCommentRemoved) {
 						script = getColumnDropCommentScript({ schemaName, tableName, columnName });
 
-						return AlterScriptDto.getInstance([script], true, true);
+						return AlterScriptDto.getInstance(
+							[script],
+							isCommentActivated({ table: tables[tableName], column: columns[columnName] }),
+							true,
+						);
 					}
 
 					if (!newComment || !oldComment || newComment === oldComment) {
@@ -418,7 +433,11 @@ const alterEntityHelper = (app, options) => {
 						});
 					}
 
-					return AlterScriptDto.getInstance([script], true, false);
+					return AlterScriptDto.getInstance(
+						[script],
+						isCommentActivated({ table: tables[tableName], column: columns[columnName] }),
+						false,
+					);
 				});
 			})
 			.filter(Boolean);
