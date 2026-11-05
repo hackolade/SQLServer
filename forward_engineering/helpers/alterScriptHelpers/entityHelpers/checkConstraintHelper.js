@@ -39,9 +39,9 @@ const mapCheckConstraintNamesToChangeHistory = collection => {
 };
 
 /**
- * @return {(constraintHistory: Array<CheckConstraintHistoryEntry>, fullTableName: string) => Array<AlterScriptDto>}
+ * @return {(constraintHistory: Array<CheckConstraintHistoryEntry>, fullTableName: string, isActivated: boolean) => Array<AlterScriptDto>}
  * */
-const getDropCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fullTableName) => {
+const getDropCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fullTableName, isActivated) => {
 	return constraintHistory
 		.filter(historyEntry => historyEntry.old && !historyEntry.new)
 		.map(historyEntry => {
@@ -49,16 +49,16 @@ const getDropCheckConstraintScriptDtos = ddlProvider => (constraintHistory, full
 
 			return AlterScriptDto.getInstance(
 				[ddlProvider.dropConstraint(fullTableName, wrappedConstraintName)],
-				true,
+				isActivated,
 				true,
 			);
 		});
 };
 
 /**
- * @return {(constraintHistory: Array<CheckConstraintHistoryEntry>, fullTableName: string) => Array<AlterScriptDto>}
+ * @return {(constraintHistory: Array<CheckConstraintHistoryEntry>, fullTableName: string, isActivated: boolean) => Array<AlterScriptDto>}
  * */
-const getAddCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fullTableName) => {
+const getAddCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fullTableName, isActivated) => {
 	return constraintHistory
 		.filter(historyEntry => historyEntry.new && !historyEntry.old)
 		.map(historyEntry => {
@@ -70,13 +70,13 @@ const getAddCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fullT
 				constrCheck,
 			);
 		})
-		.map(script => AlterScriptDto.getInstance([script], true, false));
+		.map(script => AlterScriptDto.getInstance([script], isActivated, false));
 };
 
 /**
- * @return {(constraintHistory: Array<CheckConstraintHistoryEntry>, fullTableName: string) => Array<AlterScriptDto>}
+ * @return {(constraintHistory: Array<CheckConstraintHistoryEntry>, fullTableName: string, isActivated: boolean) => Array<AlterScriptDto>}
  * */
-const getUpdateCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fullTableName) => {
+const getUpdateCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fullTableName, isActivated) => {
 	return constraintHistory
 		.filter(historyEntry => {
 			if (historyEntry.old && historyEntry.new) {
@@ -107,8 +107,8 @@ const getUpdateCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fu
 			);
 
 			return [
-				AlterScriptDto.getInstance([dropConstraintScript], true, true),
-				AlterScriptDto.getInstance([addConstraintScript], true, false),
+				AlterScriptDto.getInstance([dropConstraintScript], isActivated, true),
+				AlterScriptDto.getInstance([addConstraintScript], isActivated, false),
 			];
 		});
 };
@@ -119,12 +119,22 @@ const getUpdateCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fu
 const getModifyCheckConstraintScriptDtos = ddlProvider => collection => {
 	const fullTableName = getFullTableName(collection);
 	const constraintHistory = mapCheckConstraintNamesToChangeHistory(collection);
+	const isActivated = collection.role?.isActivated !== false;
 
-	const addCheckConstraintScripts = getAddCheckConstraintScriptDtos(ddlProvider)(constraintHistory, fullTableName);
-	const dropCheckConstraintScripts = getDropCheckConstraintScriptDtos(ddlProvider)(constraintHistory, fullTableName);
+	const addCheckConstraintScripts = getAddCheckConstraintScriptDtos(ddlProvider)(
+		constraintHistory,
+		fullTableName,
+		isActivated,
+	);
+	const dropCheckConstraintScripts = getDropCheckConstraintScriptDtos(ddlProvider)(
+		constraintHistory,
+		fullTableName,
+		isActivated,
+	);
 	const updateCheckConstraintScripts = getUpdateCheckConstraintScriptDtos(ddlProvider)(
 		constraintHistory,
 		fullTableName,
+		isActivated,
 	);
 
 	return [...dropCheckConstraintScripts, ...addCheckConstraintScripts, ...updateCheckConstraintScripts];

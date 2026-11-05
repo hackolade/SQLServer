@@ -8,6 +8,7 @@ const defaultValueColumnHelper = ddlProvider => {
 		const scripts = [];
 
 		const getDefaultConstraintName = columnName => sanitizeConstraintName(`DF_${fullName}_${columnName}`);
+		const isCollectionActivated = collection.role?.isActivated !== false;
 
 		Object.entries(collection?.properties ?? []).forEach(([columnName, collectionSchema]) => {
 			const type = hasType(collectionSchema.type)
@@ -18,6 +19,7 @@ const defaultValueColumnHelper = ddlProvider => {
 			const newConstraintName = collectionSchema.defaultConstraintName;
 			const oldDefaultValue = collection.role.properties[columnName]?.default;
 			const oldConstraintName = collection.role.properties[columnName]?.defaultConstraintName;
+			const isActivated = isCollectionActivated && collectionSchema.isActivated !== false;
 
 			const defaultValueWasRemoved = !!oldDefaultValue && !newDefaultValue;
 			const defaultValueWasAdded = !oldDefaultValue && !!newDefaultValue;
@@ -36,7 +38,7 @@ const defaultValueColumnHelper = ddlProvider => {
 				case defaultValueWasRemoved: {
 					if (oldConstraintName) {
 						const dropScript = ddlProvider.dropConstraint(fullName, oldConstraintName);
-						scripts.push(AlterScriptDto.getInstance([dropScript], true, true));
+						scripts.push(AlterScriptDto.getInstance([dropScript], isActivated, true));
 					}
 					break;
 				}
@@ -51,13 +53,13 @@ const defaultValueColumnHelper = ddlProvider => {
 						},
 						fullName,
 					);
-					scripts.push(AlterScriptDto.getInstance([createScript], true, false));
+					scripts.push(AlterScriptDto.getInstance([createScript], isActivated, false));
 					break;
 				}
 				case defaultValueWasChanged: {
 					if (oldConstraintName) {
 						const dropScript = ddlProvider.dropConstraint(fullName, oldConstraintName);
-						scripts.push(AlterScriptDto.getInstance([dropScript], true, true));
+						scripts.push(AlterScriptDto.getInstance([dropScript], isActivated, true));
 					}
 					const constraintName = newConstraintName || getDefaultConstraintName(columnName);
 
@@ -69,7 +71,7 @@ const defaultValueColumnHelper = ddlProvider => {
 						},
 						fullName,
 					);
-					scripts.push(AlterScriptDto.getInstance([createScript], true, false));
+					scripts.push(AlterScriptDto.getInstance([createScript], isActivated, false));
 					break;
 				}
 				case constraintNameChanged: {
@@ -84,8 +86,8 @@ const defaultValueColumnHelper = ddlProvider => {
 						fullName,
 					);
 					scripts.push(
-						AlterScriptDto.getInstance([dropScript], true, true),
-						AlterScriptDto.getInstance([createScript], true, false),
+						AlterScriptDto.getInstance([dropScript], isActivated, true),
+						AlterScriptDto.getInstance([createScript], isActivated, false),
 					);
 					break;
 				}
