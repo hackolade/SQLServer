@@ -41,6 +41,7 @@ const {
 	reorderTableRows,
 	containsJson,
 	getPeriodForSystemTime,
+	removeBinaryValues,
 } = require('./helpers');
 const pipe = require('../helpers/pipe');
 const { getUniqueIndexesColumns } = require('./helpers/getUniqueIndexesColumns');
@@ -427,7 +428,7 @@ const processTable = async ({ schemaName, rawTableName, ...context }) => {
 					tableSchema: schemaName,
 					recordSamplingSettings,
 					logger,
-				})
+				}).then(removeBinaryValues)
 			: Promise.resolve([]),
 		getTableKeyConstraints({ client, dbName, tableName, schemaName, logger }),
 	]);

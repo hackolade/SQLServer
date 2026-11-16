@@ -19,6 +19,7 @@ const reorderTableRows = require('./reorderTableRows');
 const getUserDefinedTypes = require('./getUserDefinedTypes');
 const containsJson = require('./containsJson');
 const getPeriodForSystemTime = require('./getPeriodForSystemTime');
+const removeBinaryValues = require('./removeBinaryValues');
 
 module.exports = {
 	transformDatabaseTableInfoToJSON,
@@ -42,4 +43,5 @@ module.exports = {
 	getUserDefinedTypes,
 	containsJson,
 	getPeriodForSystemTime,
+	removeBinaryValues,
 };
