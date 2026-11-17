@@ -166,7 +166,15 @@ const getTableRowCount = async ({ tableSchema, tableName, client }) => {
 	return rowCountResponse?.recordset[0]?.rowsCount;
 };
 
-const getTableRow = async ({ client, dbName, tableName, tableSchema, recordSamplingSettings, logger }) => {
+const getTableRow = async ({
+	client,
+	dbName,
+	tableName,
+	tableSchema,
+	columnNames = [],
+	recordSamplingSettings,
+	logger,
+}) => {
 	const currentDbConnectionClient = await getClient({
 		client,
 		dbName,
@@ -196,13 +204,21 @@ const getTableRow = async ({ client, dbName, tableName, tableSchema, recordSampl
 		);
 	}
 
+	const request = currentDbConnectionClient
+		.request()
+		.input('tableName', sql.VarChar, tableName)
+		.input('tableSchema', sql.VarChar, tableSchema)
+		.input('amount', sql.Int, amount);
+
+	if (columnNames.length === 0) {
+		return mapResponse(
+			await request.query`EXEC('SELECT TOP '+ @Amount +' * FROM [' + @TableSchema + '].[' + @TableName + '];');`,
+		);
+	}
+
 	return mapResponse(
-		await currentDbConnectionClient
-			.request()
-			.input('tableName', sql.VarChar, tableName)
-			.input('tableSchema', sql.VarChar, tableSchema)
-			.input('amount', sql.Int, amount)
-			.query`EXEC('SELECT TOP '+ @Amount +' * FROM [' + @TableSchema + '].[' + @TableName + '];');`,
+		await request.input('columnsList', sql.NVarChar(sql.MAX), columnNames.join(', '))
+			.query`EXEC('SELECT TOP '+ @Amount +' ' + @ColumnsList + ' FROM [' + @TableSchema + '].[' + @TableName + '];');`,
 	);
 };
 

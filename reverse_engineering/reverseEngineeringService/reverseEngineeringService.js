@@ -45,6 +45,24 @@ const {
 const pipe = require('../helpers/pipe');
 const { getUniqueIndexesColumns } = require('./helpers/getUniqueIndexesColumns');
 
+const BINARY_DATA_TYPES = new Set([
+	'binary',
+	'varbinary',
+	'image',
+	'timestamp',
+	'geography',
+	'geometry',
+	'hierarchyid',
+]);
+
+const quoteName = name => `[${String(name).replaceAll(']', ']]')}]`;
+
+const getSampleColumnsList = ({ tableInfo }) =>
+	tableInfo.map(column => {
+		const name = quoteName(column['COLUMN_NAME']);
+		return BINARY_DATA_TYPES.has(column['DATA_TYPE']) ? `NULL AS ${name}` : name;
+	});
+
 const mergeCollectionsWithViews = ({ jsonSchemas }) => {
 	const [viewSchemas, collectionSchemas] = partition(jsonSchemas, jsonSchema => jsonSchema.relatedTables);
 	const groupedViewSchemas = groupBy(viewSchemas, 'dbName');
@@ -425,6 +443,7 @@ const processTable = async ({ schemaName, rawTableName, ...context }) => {
 					dbName,
 					tableName,
 					tableSchema: schemaName,
+					columnNames: getSampleColumnsList({ tableInfo }),
 					recordSamplingSettings,
 					logger,
 				})
