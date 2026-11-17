@@ -127,10 +127,7 @@ const getKeyColumns = (isAllColumnsDeactivated, isParentActivated, columns) => {
 	const columnMapToString = ({ name, order }) => `[${name}] ${order}`.trim();
 	const dividedColumns = divideIntoActivatedAndDeactivated(columns, columnMapToString);
 	const deactivatedColumnsAsString = dividedColumns?.deactivatedItems?.length
-		? commentIfDeactivated(dividedColumns.deactivatedItems.join(', '), {
-				isActivated: false,
-				isPartOfLine: true,
-			})
+		? commentIfDeactivated(dividedColumns.deactivatedItems.join(', '), { isActivated: false }, true)
 		: '';
 
 	return !isAllColumnsDeactivated && isParentActivated

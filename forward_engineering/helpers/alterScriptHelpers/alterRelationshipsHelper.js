@@ -9,6 +9,10 @@ const getRelationshipName = relationship => {
 	return relationship.role.code || relationship.role.name;
 };
 
+const isRelatedTableActivated = ({ bucket, collection } = {}) => {
+	return bucket?.isActivated !== false && collection?.isActivated !== false;
+};
+
 /**
  * @return {(relationship: AlterRelationshipDto) => string}
  * */
@@ -40,10 +44,10 @@ const getAddSingleForeignKeyStatementDto = ddlProvider => relationship => {
 			customProperties: compMod.customProperties?.new,
 			foreignTable: compMod.child.collection.name,
 			foreignSchemaName: compMod.child.bucket.name,
-			foreignTableActivated: compMod.child.collection.isActivated,
+			foreignTableActivated: isRelatedTableActivated(compMod.child),
 			primaryTable: compMod.parent.collection.name,
 			primarySchemaName: compMod.parent.bucket.name,
-			primaryTableActivated: compMod.parent.collection.isActivated,
+			primaryTableActivated: isRelatedTableActivated(compMod.parent),
 			isActivated: Boolean(relationship.role?.compMod?.isActivated?.new),
 		},
 		null,
@@ -100,7 +104,7 @@ const getDeleteSingleForeignKeyStatementDto = ddlProvider => relationship => {
 	const statement = ddlProvider.dropForeignKey(ddlChildEntityName, ddlRelationshipName);
 
 	const isRelationshipActivated = Boolean(relationship.role?.compMod?.isActivated?.new);
-	const isChildTableActivated = compMod.child.collection.isActivated;
+	const isChildTableActivated = isRelatedTableActivated(compMod.child);
 	return {
 		statement,
 		isActivated: isRelationshipActivated && isChildTableActivated,
@@ -162,4 +166,5 @@ module.exports = {
 	getModifyForeignKeyScriptDtos,
 	getAddForeignKeyScriptDtos,
 	getRelationshipName,
+	isRelatedTableActivated,
 };

@@ -272,11 +272,19 @@ const ddlProvider = (baseProvider, options, app) => {
 		},
 
 		createIndex(tableName, index, dbData, isParentActivated = true) {
-			const isActivated = checkIndexActivated(index);
-			if (!isParentActivated) {
-				return createTableIndex(terminator, tableName, index, isActivated);
+			const isIndexActivated = checkIndexActivated(index);
+			const statement = createTableIndex(
+				terminator,
+				tableName,
+				index,
+				isParentActivated !== false && isIndexActivated,
+			);
+
+			if (isParentActivated === false) {
+				return statement;
 			}
-			return createTableIndex(terminator, tableName, index, isActivated && isParentActivated);
+
+			return commentIfDeactivated(statement, { isActivated: isIndexActivated });
 		},
 
 		createCheckConstraint(checkConstraint) {
@@ -427,6 +435,7 @@ const ddlProvider = (baseProvider, options, app) => {
 						customTerminator: viewData.terminator,
 					})
 				: '';
+			const isViewStatementActivated = viewData.isActivated !== false;
 
 			const viewStatement = assignTemplates(templates.createView, {
 				name: viewData.viewName,
@@ -434,12 +443,25 @@ const ddlProvider = (baseProvider, options, app) => {
 				check_option: viewData.checkOption,
 				select_statement: viewData.selectStatement,
 				terminator: viewData.terminator,
-				comment: viewComment ? `\n${viewComment}` : '',
+				comment: viewComment && isViewStatementActivated ? `\n${viewComment}` : '',
 			});
 
-			return ifNotExist
+			const statement = ifNotExist
 				? wrapIfNotExistView({ templates, viewStatement, viewName: viewData.viewNameIfNotExist, terminator })
 				: viewStatement;
+
+			const shouldCommentViewStatement = isActivated !== false && !isViewStatementActivated;
+			const commentedView = commentIfDeactivated(isViewStatementActivated ? statement : _.trimEnd(statement), {
+				isActivated: !shouldCommentViewStatement,
+			});
+
+			if (!viewComment || isViewStatementActivated) {
+				return commentedView;
+			}
+
+			const commentedViewComment = commentIfDeactivated(viewComment, { isActivated: false });
+
+			return `${commentedView}\n\n${commentedViewComment}`;
 		},
 
 		createViewIndex(viewName, index, dbData, isParentActivated = true) {
@@ -623,13 +645,21 @@ const ddlProvider = (baseProvider, options, app) => {
 		},
 
 		hydrateViewColumn(data) {
+			const isSourceTableActivated = _.first(data.entityData)?.isActivated !== false;
+			const isSourceSchemaActivated = _.first(data.containerData)?.isActivated !== false;
+			const isSourceColumnActivated = data.definition?.isActivated !== false;
+
 			return {
 				dbName: _.get(data.containerData, '[0].databaseName', ''),
 				schemaName: data.dbName,
 				alias: data.alias,
 				name: data.name,
 				tableName: data.entityName,
-				isActivated: data.isActivated,
+				isActivated:
+					data.isActivated !== false &&
+					isSourceTableActivated &&
+					isSourceSchemaActivated &&
+					isSourceColumnActivated,
 			};
 		},
 
@@ -854,13 +884,17 @@ const ddlProvider = (baseProvider, options, app) => {
 				return '';
 			}
 
-			return assignTemplates(templates.alterView, {
+			const statement = assignTemplates(templates.alterView, {
 				name: viewData.viewName,
 				viewAttribute: viewData.viewAttribute,
 				checkOption: viewData.checkOption,
 				selectStatement: viewData.selectStatement,
 				terminator,
 			});
+
+			const shouldCommentStatement = isActivated !== false && viewData.isActivated === false;
+
+			return commentIfDeactivated(statement, { isActivated: !shouldCommentStatement });
 		},
 
 		dropUdt(udt) {

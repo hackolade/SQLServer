@@ -80,6 +80,10 @@ const getCreateViewData = ({
 }) => {
 	const viewTerminator = ifNotExist ? ';' : terminator;
 	const viewData = getViewData(keys, schemaData);
+	const hasCustomSelectStatement = Boolean(_.trim(selectStatement));
+	const hasActiveColumns = (keys || []).some(key => key.isActivated !== false);
+	const isViewStatementActivated = isActivated !== false && (hasCustomSelectStatement || hasActiveColumns);
+	const isParentActivated = isViewStatementActivated;
 
 	if (partitioned) {
 		selectStatement = createViewSelectStatement({
@@ -87,7 +91,7 @@ const getCreateViewData = ({
 			selectStatement,
 			keys,
 			terminator: viewTerminator,
-			isParentActivated: isActivated,
+			isParentActivated,
 		});
 	}
 
@@ -96,13 +100,20 @@ const getCreateViewData = ({
 	}
 
 	let columnsAsString = viewData.columns.map(column => column.statement).join(',\n\t\t');
+	let tablesAsString = viewData.tables.map(table => table.statement).join(', ');
 
-	if (isActivated) {
+	if (isParentActivated) {
 		const dividedColumns = divideIntoActivatedAndDeactivated(viewData.columns, column => column.statement);
 		const deactivatedColumnsString = dividedColumns.deactivatedItems.length
 			? commentIfDeactivated(dividedColumns.deactivatedItems.join(',\n\t\t'), { isActivated: false }, true)
 			: '';
 		columnsAsString = dividedColumns.activatedItems.join(',\n\t\t') + deactivatedColumnsString;
+
+		const dividedTables = divideIntoActivatedAndDeactivated(viewData.tables, table => table.statement);
+		const deactivatedTablesString = dividedTables.deactivatedItems.length
+			? commentIfDeactivated(`, ${dividedTables.deactivatedItems.join(', ')}`, { isActivated: false }, true)
+			: '';
+		tablesAsString = dividedTables.activatedItems.join(', ') + deactivatedTablesString;
 	}
 
 	const viewName = getTableName(name, schemaData.schemaName);
@@ -116,11 +127,12 @@ const getCreateViewData = ({
 		selectStatement: _.trim(selectStatement)
 			? _.trim(tab(selectStatement)) + '\n'
 			: assignTemplates(templates.viewSelectStatement, {
-					tableName: viewData.tables.join(', '),
+					tableName: tablesAsString,
 					keys: columnsAsString,
 					terminator: viewTerminator,
 				}),
 		terminator: viewTerminator,
+		isActivated: isViewStatementActivated,
 	};
 };
 

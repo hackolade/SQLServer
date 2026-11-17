@@ -7,6 +7,7 @@ const {
 	getFullCollectionName,
 	getEntityName,
 	buildDefaultPKName,
+	isCollectionInDeltaModelActivated,
 } = require('../../../utils/general');
 
 const amountOfColumnsInRegularPk = 1;
@@ -279,7 +280,7 @@ const getAddCompositePkScriptDtos = ddlProvider => collection => {
 		.map(keyData => {
 			const statementDto = ddlProvider.addPKConstraint(
 				fullTableName,
-				collection.isActivated,
+				isCollectionInDeltaModelActivated(collection),
 				keyData,
 				true,
 				true,
@@ -315,7 +316,12 @@ const getDropCompositePkScriptDtos = ddlProvider => collection => {
 			}
 			const ddlConstraintName = wrapInBrackets(constraintName);
 			const script = ddlProvider.dropPKConstraint(fullTableName, ddlConstraintName);
-			return new PkScriptModificationDto(script, fullTableName, true, collection.isActivated);
+			return new PkScriptModificationDto(
+				script,
+				fullTableName,
+				true,
+				isCollectionInDeltaModelActivated(collection),
+			);
 		})
 		.filter(scriptDto => Boolean(scriptDto.script));
 };
@@ -531,12 +537,17 @@ const getAddPkScriptDtos = ddlProvider => collection => {
 
 			const statementDto = ddlProvider.addPKConstraint(
 				fullTableName,
-				collection.isActivated,
+				isCollectionInDeltaModelActivated(collection),
 				keyData,
 				isPKWithOptions,
 				true,
 			);
-			return new PkScriptModificationDto(statementDto.statement, fullTableName, false, statementDto.isActivated);
+			return new PkScriptModificationDto(
+				statementDto.statement,
+				fullTableName,
+				false,
+				statementDto.isActivated && jsonSchema.isActivated !== false,
+			);
 		})
 		.filter(scriptDto => Boolean(scriptDto.script));
 };
@@ -569,7 +580,12 @@ const getDropPkScriptDto = ddlProvider => collection => {
 			const ddlConstraintName = wrapInBrackets(getConstraintNameForRegularPk(oldJsonSchema, entityName));
 
 			const script = ddlProvider.dropPKConstraint(fullTableName, ddlConstraintName);
-			return new PkScriptModificationDto(script, fullTableName, true, collection.isActivated);
+			return new PkScriptModificationDto(
+				script,
+				fullTableName,
+				true,
+				isCollectionInDeltaModelActivated(collection),
+			);
 		})
 		.filter(scriptDto => Boolean(scriptDto.script));
 };
@@ -610,10 +626,15 @@ const getModifyPkConstraintsScriptDtos = ddlProvider => collection => {
 
 	const allDtos = [...modifyCompositePkScriptDtos, ...modifyPkScriptDtos];
 	const sortedAllDtos = sortModifyPkConstraints(allDtos);
+	const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 
 	return sortedAllDtos
 		.map(dto => {
-			return AlterScriptDto.getInstance([dto.script], dto.isActivated, dto.isDropScript);
+			return AlterScriptDto.getInstance(
+				[dto.script],
+				isCollectionActivated && dto.isActivated !== false,
+				dto.isDropScript,
+			);
 		})
 		.filter(Boolean);
 };

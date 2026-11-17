@@ -5,6 +5,7 @@ const {
 	getSchemaOfAlterCollection,
 	getEntityName,
 	wrapInBrackets,
+	isCollectionInDeltaModelActivated,
 } = require('../../../utils/general');
 const { getCompositeUniqueKeys, hydrateUniqueOptions } = require('../../keyHelper');
 
@@ -103,7 +104,7 @@ const getAddCompositeUKScriptDtos = ddlProvider => collection => {
 		.map(keyData => {
 			const statementDto = ddlProvider.addUniqueConstraint(
 				fullTableName,
-				collection.isActivated,
+				isCollectionInDeltaModelActivated(collection),
 				keyData,
 				true,
 				true,
@@ -143,7 +144,12 @@ const getDropCompositeUKScriptDtos = ddlProvider => collection => {
 			const ddlConstraintName = wrapInBrackets(constraintName);
 			const script = ddlProvider.dropUniqueConstraint(fullTableName, ddlConstraintName);
 
-			return new UniqueConstraintScriptModificationDto(script, fullTableName, true, collection.isActivated);
+			return new UniqueConstraintScriptModificationDto(
+				script,
+				fullTableName,
+				true,
+				isCollectionInDeltaModelActivated(collection),
+			);
 		})
 		.filter(scriptDto => Boolean(scriptDto.script));
 };
@@ -275,7 +281,7 @@ const getAddUKScriptDtos = ddlProvider => collection => {
 
 			const statementDto = ddlProvider.addUniqueConstraint(
 				fullTableName,
-				collection.isActivated,
+				isCollectionInDeltaModelActivated(collection),
 				keyData,
 				isUKWithOptions,
 				true,
@@ -284,7 +290,7 @@ const getAddUKScriptDtos = ddlProvider => collection => {
 				statementDto.statement,
 				fullTableName,
 				false,
-				statementDto.isActivated,
+				statementDto.isActivated && jsonSchema.isActivated !== false,
 			);
 		})
 		.filter(scriptDto => Boolean(scriptDto.script));
@@ -311,7 +317,12 @@ const getDropUKScriptDtos = ddlProvider => collection => {
 			const ddlConstraintName = wrapInBrackets(getConstraintNameForRegularUK(oldJsonSchema, entityName, oldName));
 
 			const script = ddlProvider.dropUniqueConstraint(fullTableName, ddlConstraintName);
-			return new UniqueConstraintScriptModificationDto(script, fullTableName, true, collection.isActivated);
+			return new UniqueConstraintScriptModificationDto(
+				script,
+				fullTableName,
+				true,
+				isCollectionInDeltaModelActivated(collection),
+			);
 		})
 		.filter(scriptDto => Boolean(scriptDto.script));
 };
@@ -335,10 +346,15 @@ const getModifyUniqueConstraintsScriptDtos = ddlProvider => collection => {
 
 	const allDtos = [...modifyCompositeUKScriptDtos, ...modifyUKScriptDtos];
 	const sortedDtos = sortModifyUniqueConstraints(allDtos);
+	const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 
 	return sortedDtos
 		.map(dto => {
-			return AlterScriptDto.getInstance([dto.script], dto.isActivated, dto.isDropScript);
+			return AlterScriptDto.getInstance(
+				[dto.script],
+				isCollectionActivated && dto.isActivated !== false,
+				dto.isDropScript,
+			);
 		})
 		.filter(Boolean);
 };

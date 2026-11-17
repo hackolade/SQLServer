@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const { AlterScriptDto } = require('./types/AlterScriptDto');
-const { getDbData } = require('../../utils/general');
+const { getDbData, isObjectInDeltaModelActivated } = require('../../utils/general');
 
 const alterContainerHelper = (app, options) => {
 	const ddlProvider = require('../../ddlProvider')(null, options, app);
@@ -14,7 +14,18 @@ const alterContainerHelper = (app, options) => {
 			modelData: [{ dbVersion: options.dbVersion }],
 		});
 
-		return AlterScriptDto.getInstance([_.trim(ddlProvider.createSchema(schemaData))], true, false);
+		return AlterScriptDto.getInstance(
+			[
+				_.trim(
+					ddlProvider.createSchema({
+						...schemaData,
+						isActivated: isObjectInDeltaModelActivated(containerData),
+					}),
+				),
+			],
+			true,
+			false,
+		);
 	};
 
 	const getDeleteContainerScriptDto = containerName => {
@@ -36,7 +47,7 @@ const alterContainerHelper = (app, options) => {
 
 			const script = getDropSchemaCommentScript({ schemaName });
 
-			return AlterScriptDto.getInstance([script], true, true);
+			return AlterScriptDto.getInstance([script], isObjectInDeltaModelActivated(schemas[schemaName]), true);
 		});
 
 	const getSchemasModifyCommentsAlterScriptsDto = schemas => {
@@ -46,11 +57,12 @@ const alterContainerHelper = (app, options) => {
 			const newComment = schemaComparison?.description?.new;
 			const oldComment = schemaComparison?.description?.old;
 			const isCommentRemoved = oldComment && !newComment;
+			const isActivated = isObjectInDeltaModelActivated(schemas[schemaName]);
 
 			if (isCommentRemoved) {
 				script = getDropSchemaCommentScript({ schemaName });
 
-				return AlterScriptDto.getInstance([script], true, true);
+				return AlterScriptDto.getInstance([script], isActivated, true);
 			}
 
 			if (!newComment || newComment === oldComment) {
@@ -66,7 +78,7 @@ const alterContainerHelper = (app, options) => {
 				});
 			}
 
-			return AlterScriptDto.getInstance([script], true, false);
+			return AlterScriptDto.getInstance([script], isActivated, false);
 		});
 	};
 

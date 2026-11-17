@@ -239,6 +239,22 @@ const getDbData = containerData => {
 	return { ..._.get(containerData, '[0]', {}), name: getDbName(containerData) };
 };
 
+const isObjectInDeltaModelActivated = modelObject => {
+	return modelObject?.compMod?.isActivated?.new ?? modelObject?.role?.isActivated ?? true;
+};
+
+const isParentContainerActivated = modelObject => {
+	return (
+		modelObject?.compMod?.bucketProperties?.isActivated ??
+		modelObject?.role?.compMod?.bucketProperties?.isActivated ??
+		true
+	);
+};
+
+const isCollectionInDeltaModelActivated = collection => {
+	return Boolean(isParentContainerActivated(collection) && isObjectInDeltaModelActivated(collection));
+};
+
 module.exports = {
 	buildStatement,
 	getName,
@@ -270,4 +286,7 @@ module.exports = {
 	clean,
 	tab,
 	getDbData,
+	isObjectInDeltaModelActivated,
+	isParentContainerActivated,
+	isCollectionInDeltaModelActivated,
 };

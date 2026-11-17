@@ -1,24 +1,24 @@
 const _ = require('lodash');
 const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 const { AlterScriptDto } = require('../types/AlterScriptDto');
-const { compareObjectsByProperties } = require('../../../utils/general');
+const { compareObjectsByProperties, isCollectionInDeltaModelActivated } = require('../../../utils/general');
 
 const alterComputedColumnHelper = ddlProvider => {
-	const changeToComputed = (fullName, columnName, columnDefinition) => {
+	const changeToComputed = (fullName, columnName, columnDefinition, isActivated) => {
 		return [
-			AlterScriptDto.getInstance([ddlProvider.dropColumn(fullName, columnName)], true, true),
+			AlterScriptDto.getInstance([ddlProvider.dropColumn(fullName, columnName)], isActivated, true),
 			AlterScriptDto.getInstance(
-				[ddlProvider.alterComputedColumn(fullName, columnName, columnDefinition)],
-				true,
+				[ddlProvider.alterComputedColumn(fullName, columnName, { ...columnDefinition, isActivated: true })],
+				isActivated,
 				false,
 			),
 		];
 	};
 
-	const changeToNonComputed = (fullName, columnName, columnDefinition) => {
+	const changeToNonComputed = (fullName, columnName, columnDefinition, isActivated) => {
 		return [
-			AlterScriptDto.getInstance([ddlProvider.dropColumn(fullName, columnName)], true, true),
-			AlterScriptDto.getInstance([ddlProvider.alterColumn(fullName, columnDefinition)], true, false),
+			AlterScriptDto.getInstance([ddlProvider.dropColumn(fullName, columnName)], isActivated, true),
+			AlterScriptDto.getInstance([ddlProvider.alterColumn(fullName, columnDefinition)], isActivated, false),
 		];
 	};
 
@@ -34,6 +34,7 @@ const alterComputedColumnHelper = ddlProvider => {
 		toAddNotNull,
 		toRemoveNotNull,
 		dbVersion,
+		isCollectionActivated,
 	}) => {
 		const schemaData = { schemaName, dbVersion };
 		const columnDefinition = createColumnDefinitionBySchema({
@@ -44,6 +45,7 @@ const alterComputedColumnHelper = ddlProvider => {
 			schemaData,
 		});
 		columnDefinition.nullable = toRemoveNotNull;
+		const isActivated = isCollectionActivated && jsonSchema.isActivated !== false;
 		let sqlScripts = [];
 
 		const isComputedRemoved = prevJsonSchema.computed && !jsonSchema.computed;
@@ -56,17 +58,19 @@ const alterComputedColumnHelper = ddlProvider => {
 				toRemoveNotNull);
 
 		if ((isComputedRemoved || isComputedModified) && !jsonSchema.computedExpression) {
-			sqlScripts = changeToNonComputed(fullName, columnName, columnDefinition);
+			sqlScripts = changeToNonComputed(fullName, columnName, columnDefinition, isActivated);
 		}
 
 		if ((isComputedEnabled || isComputedModified) && jsonSchema.computedExpression) {
-			sqlScripts = changeToComputed(fullName, columnName, columnDefinition);
+			sqlScripts = changeToComputed(fullName, columnName, columnDefinition, isActivated);
 		}
 
 		return sqlScripts;
 	};
 
 	const getChangedComputedColumnsScriptsDto = ({ collection, fullName, collectionSchema, schemaName, dbVersion }) => {
+		const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
+
 		return _.toPairs(collection.properties)
 			.reduce((result, [columnName, jsonSchema]) => {
 				const oldJsonSchema = _.omit(collection.role?.properties?.[columnName], ['compMod']);
@@ -92,6 +96,7 @@ const alterComputedColumnHelper = ddlProvider => {
 						toAddNotNull,
 						toRemoveNotNull,
 						dbVersion,
+						isCollectionActivated,
 					}),
 				);
 

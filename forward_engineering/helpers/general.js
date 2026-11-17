@@ -153,8 +153,12 @@ const getViewData = (keys, schemaData) => {
 				tableName = `[${key.dbName}].` + tableName;
 			}
 
-			if (!result.tables.includes(tableName)) {
-				result.tables.push(tableName);
+			const addedTable = result.tables.find(table => table.statement === tableName);
+
+			if (addedTable) {
+				addedTable.isActivated = addedTable.isActivated || key.isActivated !== false;
+			} else {
+				result.tables.push({ statement: tableName, isActivated: key.isActivated !== false });
 			}
 
 			result.columns.push({
