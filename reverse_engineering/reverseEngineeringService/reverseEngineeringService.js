@@ -28,7 +28,6 @@ const {
 	reverseTableIndexes,
 	defineRequiredFields,
 	defineFieldsDescription,
-	doesViewHaveRelatedTables,
 	reverseTableCheckConstraints,
 	changeViewPropertiesToReferences,
 	defineFieldsKeyConstraints,
@@ -425,6 +424,7 @@ const processTable = async ({ schemaName, rawTableName, ...context }) => {
 					dbName,
 					tableName,
 					tableSchema: schemaName,
+					tableInfo,
 					recordSamplingSettings,
 					logger,
 				})
