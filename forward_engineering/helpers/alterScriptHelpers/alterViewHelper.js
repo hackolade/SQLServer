@@ -2,6 +2,7 @@ const _ = require('lodash');
 const { getTableName } = require('../general');
 const { checkCompModEqual, setIndexKeys, modifyGroupItems } = require('./common');
 const { AlterScriptDto } = require('./types/AlterScriptDto');
+const { isCollectionInDeltaModelActivated } = require('../../utils/general');
 
 const alterViewHelper = (app, options) => {
 	const { generateIdToNameHashTable, generateIdToActivatedHashTable, mapProperties } =
@@ -15,6 +16,7 @@ const alterViewHelper = (app, options) => {
 		const idToNameHashTable = generateRefToNameHashTable(viewSchema);
 		const idToActivatedHashTable = generateRefToActivatedHashTable(viewSchema);
 		const schemaData = { schemaName: viewSchema.compMod.keyspaceName, dbVersion: options.dbVersion };
+		const isViewActivated = isCollectionInDeltaModelActivated(viewSchema);
 
 		const viewData = {
 			name: viewSchema.code || viewSchema.name,
@@ -24,13 +26,19 @@ const alterViewHelper = (app, options) => {
 		const hydratedView = ddlProvider.hydrateView({ viewData, entityData: [view] });
 
 		const viewScript = AlterScriptDto.getInstance(
-			[ddlProvider.createView(hydratedView, {}, view.isActivated)],
-			true,
+			[ddlProvider.createView(hydratedView, {}, isViewActivated)],
+			isViewActivated,
 			false,
 		);
 		const indexesSCripts = (viewSchema.Indxs || [])
 			.map(hydrateIndex({ idToNameHashTable, idToActivatedHashTable, schemaData }))
-			.map(index => AlterScriptDto.getInstance([ddlProvider.createViewIndex(viewName, index)], true, false));
+			.map(index =>
+				AlterScriptDto.getInstance(
+					[ddlProvider.createViewIndex(viewName, index, {}, isViewActivated)],
+					isViewActivated,
+					false,
+				),
+			);
 
 		return [viewScript, ...indexesSCripts].filter(Boolean);
 	};
@@ -46,6 +54,7 @@ const alterViewHelper = (app, options) => {
 		const idToNameHashTable = generateIdToNameHashTable(viewSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(viewSchema);
 		const schemaData = { schemaName: viewSchema.compMod.keyspaceName, dbVersion: options.dbVersion };
+		const isViewActivated = isCollectionInDeltaModelActivated(viewSchema);
 		const viewData = {
 			name: viewSchema.code || viewSchema.name,
 			keys: getKeys(viewSchema, viewSchema.compMod?.collectionData?.collectionRefsDefinitionsMap ?? {}),
@@ -58,7 +67,7 @@ const alterViewHelper = (app, options) => {
 		const isFieldsModifiedWithNoSelectStatement =
 			!_.trim(viewSchema.selectStatement) && !_.isEmpty(view.properties);
 
-		let alterView = AlterScriptDto.getInstance([], true, false);
+		let alterView = AlterScriptDto.getInstance([], isViewActivated, false);
 
 		if (
 			isViewAttributeModified ||
@@ -68,8 +77,8 @@ const alterViewHelper = (app, options) => {
 		) {
 			const hydratedView = ddlProvider.hydrateView({ viewData, entityData: [viewSchema] });
 			alterView = AlterScriptDto.getInstance(
-				[ddlProvider.alterView(hydratedView, null, viewSchema.isActivated)],
-				true,
+				[ddlProvider.alterView(hydratedView, null, isViewActivated)],
+				isViewActivated,
 				false,
 			);
 		}
@@ -81,11 +90,20 @@ const alterViewHelper = (app, options) => {
 			create: (viewName, index) =>
 				index.orReplace
 					? [
-							AlterScriptDto.getInstance([ddlProvider.dropIndex(viewName, index)], true, true),
-							AlterScriptDto.getInstance([ddlProvider.createViewIndex(viewName, index)], true, true),
+							AlterScriptDto.getInstance([ddlProvider.dropIndex(viewName, index)], isViewActivated, true),
+							AlterScriptDto.getInstance(
+								[ddlProvider.createViewIndex(viewName, index, {}, isViewActivated)],
+								isViewActivated,
+								true,
+							),
 						]
-					: AlterScriptDto.getInstance([ddlProvider.createViewIndex(viewName, index)], true, false),
-			drop: (viewName, index) => AlterScriptDto.getInstance([ddlProvider.dropIndex(viewName, index)], true, true),
+					: AlterScriptDto.getInstance(
+							[ddlProvider.createViewIndex(viewName, index, {}, isViewActivated)],
+							isViewActivated,
+							false,
+						),
+			drop: (viewName, index) =>
+				AlterScriptDto.getInstance([ddlProvider.dropIndex(viewName, index)], isViewActivated, true),
 		}).flat();
 
 		return [alterView, ...alterIndexesScripts];
@@ -150,6 +168,26 @@ const alterViewHelper = (app, options) => {
 			viewName,
 		});
 
+	const isViewStatementActivated = view => {
+		const viewSchema = { ...view, ...view.role };
+		const hasCustomSelectStatement = Boolean(_.trim(viewSchema.selectStatement));
+
+		if (!isCollectionInDeltaModelActivated(view)) {
+			return false;
+		}
+
+		if (hasCustomSelectStatement) {
+			return true;
+		}
+
+		const keys = getKeys(viewSchema, viewSchema.compMod?.collectionData?.collectionRefsDefinitionsMap ?? {});
+
+		return keys.some(key => key.isActivated !== false);
+	};
+
+	const isCommentActivated = ({ view, column } = {}) =>
+		isViewStatementActivated(view) && column?.isActivated !== false;
+
 	const getViewsDropCommentAlterScriptsDto = views => {
 		return Object.keys(views)
 			.map(viewName => {
@@ -162,7 +200,7 @@ const alterViewHelper = (app, options) => {
 				const schemaName = view.role?.compMod?.bucketProperties?.name;
 				const script = getViewDropCommentScript({ schemaName, viewName });
 
-				return AlterScriptDto.getInstance([script], true, true);
+				return AlterScriptDto.getInstance([script], isCommentActivated({ view }), true);
 			})
 			.filter(Boolean);
 	};
@@ -176,11 +214,12 @@ const alterViewHelper = (app, options) => {
 				const newComment = viewComparison?.description?.new;
 				const oldComment = viewComparison?.description?.old;
 				const isCommentRemoved = oldComment && !newComment;
+				const isActivated = isCommentActivated({ view: views[viewName] });
 
 				if (isCommentRemoved) {
 					script = getViewDropCommentScript({ schemaName, viewName });
 
-					return AlterScriptDto.getInstance([script], true, true);
+					return AlterScriptDto.getInstance([script], isActivated, true);
 				}
 
 				if (!newComment || newComment === oldComment) {
@@ -197,7 +236,7 @@ const alterViewHelper = (app, options) => {
 					});
 				}
 
-				return AlterScriptDto.getInstance([script], true, false);
+				return AlterScriptDto.getInstance([script], isActivated, false);
 			})
 			.filter(Boolean);
 	};
@@ -230,7 +269,11 @@ const alterViewHelper = (app, options) => {
 
 					const script = getViewColumnCreateCommentScript({ schemaName, viewName, columnName, comment });
 
-					return AlterScriptDto.getInstance([script], true, false);
+					return AlterScriptDto.getInstance(
+						[script],
+						isCommentActivated({ view: views[viewName], column }),
+						false,
+					);
 				});
 			})
 			.filter(Boolean);
@@ -249,7 +292,11 @@ const alterViewHelper = (app, options) => {
 					.map(columnName => {
 						const script = getViewColumnDropCommentScript({ schemaName, viewName, columnName });
 
-						return AlterScriptDto.getInstance([script], true, true);
+						return AlterScriptDto.getInstance(
+							[script],
+							isCommentActivated({ view: views[viewName], column: columns[columnName] }),
+							true,
+						);
 					});
 			})
 			.filter(Boolean);
@@ -268,11 +315,12 @@ const alterViewHelper = (app, options) => {
 					const newComment = columns[columnName]?.refDescription;
 					const oldComment = views[viewName].role?.properties[columnName]?.refDescription;
 					const isCommentRemoved = oldComment && !newComment;
+					const isActivated = isCommentActivated({ view: views[viewName], column: columns[columnName] });
 
 					if (isCommentRemoved) {
 						script = getViewColumnDropCommentScript({ schemaName, viewName, columnName });
 
-						return AlterScriptDto.getInstance([script], true, true);
+						return AlterScriptDto.getInstance([script], isActivated, true);
 					}
 
 					if (!newComment || !oldComment || newComment === oldComment) {
@@ -295,7 +343,7 @@ const alterViewHelper = (app, options) => {
 						});
 					}
 
-					return AlterScriptDto.getInstance([script], true, false);
+					return AlterScriptDto.getInstance([script], isActivated, false);
 				});
 			})
 			.filter(Boolean);

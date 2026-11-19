@@ -2,13 +2,14 @@ const _ = require('lodash');
 const { AlterScriptDto } = require('../types/AlterScriptDto');
 const { sanitizeConstraintName, hasType, getTableName } = require('../../../helpers/general');
 const { decorateDefault } = require('../../columnDefinitionHelper');
+const { isCollectionInDeltaModelActivated } = require('../../../utils/general');
 
 const defaultValueColumnHelper = ddlProvider => {
 	const getDefaultValueChangeDto = (collection, fullName) => {
 		const scripts = [];
 
 		const getDefaultConstraintName = columnName => sanitizeConstraintName(`DF_${fullName}_${columnName}`);
-		const isCollectionActivated = collection.role?.isActivated !== false;
+		const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 
 		Object.entries(collection?.properties ?? []).forEach(([columnName, collectionSchema]) => {
 			const type = hasType(collectionSchema.type)

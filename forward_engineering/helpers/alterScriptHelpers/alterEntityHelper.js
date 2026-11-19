@@ -1,10 +1,10 @@
 const _ = require('lodash');
 const { AlterScriptDto } = require('./types/AlterScriptDto');
-const { getRelationshipName } = require('./alterRelationshipsHelper');
-const { getEntityName, getFullTableName } = require('../../utils/general');
+const { getRelationshipName, isRelatedTableActivated } = require('./alterRelationshipsHelper');
+const { getEntityName, getFullTableName, isCollectionInDeltaModelActivated } = require('../../utils/general');
 const { createColumnDefinitionBySchema } = require('./columnHelpers/createColumnDefinition');
 const { modifyGroupItems, setIndexKeys } = require('./common');
-const { getTableName } = require('../general');
+const { getTableName, checkIndexActivated } = require('../general');
 
 const alterEntityHelper = (app, options) => {
 	const ddlProvider = require('../../ddlProvider')(null, options, app);
@@ -31,6 +31,7 @@ const alterEntityHelper = (app, options) => {
 		const schemaData = { schemaName, dbVersion: options.dbVersion };
 		const jsonSchema = { ...collection, ...collection?.role };
 		const tableName = getEntityName(jsonSchema);
+		const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 		const idToNameHashTable = generateIdToNameHashTable(jsonSchema);
 		const idToActivatedHashTable = generateIdToActivatedHashTable(jsonSchema);
 		const columnDefinitions = _.toPairs(jsonSchema.properties).map(([name, column]) =>
@@ -59,10 +60,10 @@ const alterEntityHelper = (app, options) => {
 					customProperties: compMod.customProperties?.new,
 					foreignTable: compMod.child.collection.name,
 					foreignSchemaName: compMod.child.bucket.name,
-					foreignTableActivated: compMod.child.collection.isActivated,
+					foreignTableActivated: isRelatedTableActivated(compMod.child),
 					primaryTable: compMod.parent.collection.name,
 					primarySchemaName: compMod.parent.bucket.name,
-					primaryTableActivated: compMod.parent.collection.isActivated,
+					primaryTableActivated: isRelatedTableActivated(compMod.parent),
 					isActivated: Boolean(relationship.role?.compMod?.isActivated?.new),
 				});
 			});
@@ -76,9 +77,17 @@ const alterEntityHelper = (app, options) => {
 			columnDefinitions,
 		};
 
-		const indexesScripts = (jsonSchema.Indxs || [])
+		const indexesScriptsDto = (jsonSchema.Indxs || [])
 			.map(hydrateIndex({ idToNameHashTable, idToActivatedHashTable, ddlProvider, tableData, schemaData }))
-			.map(index => _.trim(ddlProvider.createIndex(tableName, index, null, jsonSchema.isActivated)));
+			.filter(Boolean)
+			.map(index =>
+				AlterScriptDto.getInstance(
+					[_.trim(ddlProvider.createIndex(tableName, index, null, isCollectionActivated))],
+					isCollectionActivated,
+					false,
+				),
+			)
+			.filter(Boolean);
 
 		const hydratedTable = ddlProvider.hydrateTable({
 			tableData,
@@ -87,13 +96,10 @@ const alterEntityHelper = (app, options) => {
 			idToNameHashTable,
 		});
 		const tableScriptDto = AlterScriptDto.getInstance(
-			[ddlProvider.createTable(hydratedTable, jsonSchema.isActivated)],
-			true,
+			[ddlProvider.createTable(hydratedTable, isCollectionActivated)],
+			isCollectionActivated,
 			false,
 		);
-		const indexesScriptsDto = indexesScripts
-			.map(indexScript => AlterScriptDto.getInstance([indexScript], true, false))
-			.filter(Boolean);
 
 		return [tableScriptDto, ...indexesScriptsDto].filter(Boolean);
 	};
@@ -122,6 +128,7 @@ const alterEntityHelper = (app, options) => {
 		const modifyCheckConstraintScriptDtos = getModifyCheckConstraintScriptDtos(ddlProvider)(collection);
 		const modifyUniqueConstraintsScriptDtos = getModifyUniqueConstraintsScriptDtos(ddlProvider)(collection);
 		const modifyPKConstraintDtos = getModifyPkConstraintsScriptDtos(ddlProvider)(collection);
+		const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 		const indexesScriptsDtos = modifyGroupItems({
 			data: jsonSchema,
 			key: 'Indxs',
@@ -132,15 +139,34 @@ const alterEntityHelper = (app, options) => {
 				schemaData,
 				tableData: [jsonSchema],
 			}),
-			create: (tableName, index) =>
-				index.orReplace
+			create: (tableName, index) => {
+				const isIndexActivated = isCollectionActivated && checkIndexActivated(index);
+
+				return index.orReplace
 					? [
-							AlterScriptDto.getInstance([ddlProvider.dropIndex(tableName, index)], true, true),
-							AlterScriptDto.getInstance([ddlProvider.createIndex(tableName, index, null)], true, false),
+							AlterScriptDto.getInstance(
+								[ddlProvider.dropIndex(tableName, index)],
+								isIndexActivated,
+								true,
+							),
+							AlterScriptDto.getInstance(
+								[ddlProvider.createIndex(tableName, index, null, isCollectionActivated)],
+								isCollectionActivated,
+								false,
+							),
 						]
-					: AlterScriptDto.getInstance([ddlProvider.createIndex(tableName, index, schemaData)], true, false),
+					: AlterScriptDto.getInstance(
+							[ddlProvider.createIndex(tableName, index, schemaData, isCollectionActivated)],
+							isCollectionActivated,
+							false,
+						);
+			},
 			drop: (tableName, index) =>
-				AlterScriptDto.getInstance([ddlProvider.dropIndex(tableName, index)], true, true),
+				AlterScriptDto.getInstance(
+					[ddlProvider.dropIndex(tableName, index)],
+					isCollectionActivated && checkIndexActivated(index),
+					true,
+				),
 		}).flat();
 
 		return [
@@ -161,6 +187,7 @@ const alterEntityHelper = (app, options) => {
 		const schemaName = collectionSchema.compMod?.keyspaceName;
 		const fullName = getTableName(tableName, schemaName);
 		const schemaData = { schemaName, dbVersion: options.dbVersion };
+		const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 
 		return _.toPairs(collection.properties)
 			.filter(([name, jsonSchema]) => !jsonSchema.compMod)
@@ -173,10 +200,14 @@ const alterEntityHelper = (app, options) => {
 					schemaData,
 				});
 
-				const columnDefinitionScript = ddlProvider.convertColumnDefinition(columnDefinition);
+				const columnDefinitionScript = ddlProvider.convertColumnDefinition({
+					...columnDefinition,
+					isActivated: true,
+				});
 				const script = ddlProvider.addColumn(fullName, columnDefinitionScript);
+				const isActivated = isCollectionActivated && columnDefinition.isActivated !== false;
 
-				return AlterScriptDto.getInstance([script], true, false);
+				return AlterScriptDto.getInstance([script], isActivated, false);
 			});
 	};
 
@@ -189,13 +220,15 @@ const alterEntityHelper = (app, options) => {
 		const tableName = collectionSchema?.code || collectionSchema?.collectionName || collectionSchema?.name;
 		const schemaName = collectionSchema.compMod?.keyspaceName;
 		const fullName = getTableName(tableName, schemaName);
+		const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 
 		return _.toPairs(collection.properties)
 			.filter(([name, jsonSchema]) => !jsonSchema.compMod)
-			.map(([name]) => {
+			.map(([name, jsonSchema]) => {
 				const script = ddlProvider.dropColumn(fullName, name);
+				const isActivated = isCollectionActivated && jsonSchema.isActivated !== false;
 
-				return AlterScriptDto.getInstance([script], true, true);
+				return AlterScriptDto.getInstance([script], isActivated, true);
 			})
 			.filter(Boolean);
 	};
@@ -210,7 +243,7 @@ const alterEntityHelper = (app, options) => {
 		const schemaName = collectionSchema.compMod?.keyspaceName;
 		const fullName = getTableName(tableName, schemaName);
 
-		const renameColumnScriptsDtos = getRenameColumnScriptsDto(collection.properties, fullName);
+		const renameColumnScriptsDtos = getRenameColumnScriptsDto(collection, fullName);
 		const changeTypeScriptsDtos = getChangeTypeScriptsDto(
 			collection.properties,
 			fullName,
@@ -258,7 +291,7 @@ const alterEntityHelper = (app, options) => {
 		});
 
 	const isCommentActivated = ({ table, column } = {}) =>
-		table?.role?.isActivated !== false && column?.isActivated !== false;
+		isCollectionInDeltaModelActivated(table) && column?.isActivated !== false;
 
 	const getTablesDropCommentAlterScriptsDto = tables => {
 		return Object.keys(tables)

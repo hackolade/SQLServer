@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const { AlterScriptDto } = require('../types/AlterScriptDto');
-const { getFullTableName, wrapInBrackets } = require('../../../utils/general');
+const { getFullTableName, wrapInBrackets, isCollectionInDeltaModelActivated } = require('../../../utils/general');
 const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 
 /**
@@ -9,7 +9,7 @@ const { createColumnDefinitionBySchema } = require('./createColumnDefinition');
 const getModifyNonNullColumnsScriptDtos = ddlProvider => (collection, collectionSchema, schemaName, dbVersion) => {
 	const fullTableName = getFullTableName(collection);
 	const schemaData = { schemaName, dbVersion };
-	const isCollectionActivated = collection.role?.isActivated !== false;
+	const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
 
 	const currentRequiredColumnNames = collection.required || [];
 	const previousRequiredColumnNames = collection.role.required || [];

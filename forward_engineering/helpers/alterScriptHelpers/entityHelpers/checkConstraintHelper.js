@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const { AlterScriptDto } = require('../types/AlterScriptDto');
-const { getFullTableName, wrapInBrackets } = require('../../../utils/general');
+const { getFullTableName, wrapInBrackets, isCollectionInDeltaModelActivated } = require('../../../utils/general');
 
 /**
  * @typedef {{
@@ -119,7 +119,7 @@ const getUpdateCheckConstraintScriptDtos = ddlProvider => (constraintHistory, fu
 const getModifyCheckConstraintScriptDtos = ddlProvider => collection => {
 	const fullTableName = getFullTableName(collection);
 	const constraintHistory = mapCheckConstraintNamesToChangeHistory(collection);
-	const isActivated = collection.role?.isActivated !== false;
+	const isActivated = isCollectionInDeltaModelActivated(collection);
 
 	const addCheckConstraintScripts = getAddCheckConstraintScriptDtos(ddlProvider)(
 		constraintHistory,

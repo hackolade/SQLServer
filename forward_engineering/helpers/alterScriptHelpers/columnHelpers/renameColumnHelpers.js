@@ -1,10 +1,13 @@
 const _ = require('lodash');
 const { checkFieldPropertiesChanged } = require('../common');
 const { AlterScriptDto } = require('../types/AlterScriptDto');
+const { isCollectionInDeltaModelActivated } = require('../../../utils/general');
 
 const renameColumnHelpers = ddlProvider => {
-	const getRenameColumnScriptsDto = (collectionProperties, fullName) => {
-		return _.values(collectionProperties)
+	const getRenameColumnScriptsDto = (collection, fullName) => {
+		const isCollectionActivated = isCollectionInDeltaModelActivated(collection);
+
+		return _.values(collection.properties)
 			.filter(jsonSchema => checkFieldPropertiesChanged(jsonSchema.compMod, ['name']))
 			.map(jsonSchema => {
 				const script = ddlProvider.renameColumn(
@@ -13,7 +16,9 @@ const renameColumnHelpers = ddlProvider => {
 					jsonSchema.compMod.newField.name,
 				);
 
-				return AlterScriptDto.getInstance([script], true, false);
+				const isActivated = isCollectionActivated && jsonSchema.isActivated !== false;
+
+				return AlterScriptDto.getInstance([script], isActivated, false);
 			});
 	};
 
